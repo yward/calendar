@@ -56,17 +56,13 @@
 	}
 
 	&.nc-calendar-fc-day-of-weekend:not(.fc-day-header) {
-		background-color: var(--color-background-dark) !important;
-	}
-
-	&.nc-calendar-fc-day-of-weekend:not(.fc-day-header) {
-		background-color: var(--color-background-dark) !important;
+		background-color: var(--color-background-hover) !important;
 	}
 }
 
 /** Weekend styles */
 .fc td.fc-day.nc-calendar-fc-day-of-weekend {
-	background-color: var(--color-background-dark);
+	background-color: var(--color-background-hover);
 }
 
 /** Week numbers in day grid view */
@@ -77,7 +73,7 @@
 
 .nc-calendar-fc-day-of-weekend {
 	.fc-daygrid-week-number {
-		background-color: var(--color-background-darker) !important;
+		background-color: var(--color-background-dark) !important;
 		color: var(--color-text-maxcontrast) !important;
 	}
 }
@@ -180,4 +176,9 @@
 /** Add text-overflow ellipsis for very long event titles */
 .fc-daygrid-block-event .fc-event-main {
 	text-overflow: ellipsis;
+}
+
+/** Make text in day-grid dot events less bold */
+.fc-daygrid-dot-event .fc-event-title {
+	font-weight: 500 !important;
 }
