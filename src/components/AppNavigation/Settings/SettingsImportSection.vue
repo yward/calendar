@@ -60,6 +60,11 @@ import {
 	showWarning,
 	showError,
 } from '@nextcloud/dialogs'
+import {
+	IMPORT_STAGE_AWAITING_USER_SELECT,
+	IMPORT_STAGE_DEFAULT,
+	IMPORT_STAGE_IMPORTING, IMPORT_STAGE_PROCESSING,
+} from '../../../models/consts.js'
 
 export default {
 	name: 'SettingsImportSection',
@@ -94,7 +99,7 @@ export default {
 		 * @returns {Boolean}
 		 */
 		allowUploadOfFiles() {
-			return this.stage === 'default'
+			return this.stage === IMPORT_STAGE_DEFAULT
 		},
 		/**
 		 * Whether or not to display the import modal
@@ -102,7 +107,7 @@ export default {
 		 * @returns {Boolean}
 		 */
 		showImportModal() {
-			return this.stage === 'awaitingUserSelect'
+			return this.stage === IMPORT_STAGE_AWAITING_USER_SELECT
 		},
 		/**
 		 * Whether or not to display progress bar
@@ -110,7 +115,7 @@ export default {
 		 * @returns {Boolean}
 		 */
 		showProgressBar() {
-			return this.stage === 'importing'
+			return this.stage === IMPORT_STAGE_IMPORTING
 		},
 		/**
 		 * Unique identifier for the input field.
@@ -149,7 +154,7 @@ export default {
 		 * @param {Event} event The change-event of the input-field
 		 */
 		async processFiles(event) {
-			this.$store.commit('changeStage', 'processing')
+			this.$store.commit('changeStage', IMPORT_STAGE_PROCESSING)
 			let addedFiles = false
 
 			for (const file of event.target.files) {
@@ -225,7 +230,7 @@ export default {
 				return
 			}
 
-			this.$store.commit('changeStage', 'awaitingUserSelect')
+			this.$store.commit('changeStage', IMPORT_STAGE_AWAITING_USER_SELECT)
 		},
 		/**
 		 * Import all events into the calendars

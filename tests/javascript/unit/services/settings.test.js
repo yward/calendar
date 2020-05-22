@@ -19,29 +19,32 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-const state = {
-	minimumDate: '1970-01-01T00:00:00Z',
-	maximumDate: '2037-12-31T23:59:59Z',
-}
+import HttpClient from '@nextcloud/axios'
+import { getLinkToConfig } from '../../../../src/utils/settings.js'
+import {setConfig} from "../../../../src/services/settings.js";
 
-const mutations = {
+jest.mock('@nextcloud/axios')
+jest.mock('../../../../src/utils/settings.js')
 
-	/**
-	 * Initialize restrictions imposed by CalDAV server
-	 *
-	 * @param {Object} state The Vuex state
-	 * @param {Object} data The destructuring object
-	 * @param {String} data.minimumDate The minimum-date allowed by the CalDAV server
-	 * @param {String} data.maximumDate The maximum-date allowed by the CalDAV server
-	 */
-	loadDavRestrictionsFromServer(state, { minimumDate, maximumDate }) {
-		state.minimumDate = minimumDate
-		state.maximumDate = maximumDate
-	},
-}
+describe('Test suite: Settings service (services/settings.js)', () => {
 
-const getters = {}
+	beforeEach(() => {
+		HttpClient.post.mockClear()
+		getLinkToConfig.mockClear()
+	})
 
-const actions = {}
+	it('should provide a setConfig method', () => {
+		getLinkToConfig.mockReturnValueOnce('url-to-config-key')
 
-export default { state, mutations, getters, actions }
+		setConfig('key42', 'value1337')
+
+		expect(getLinkToConfig).toHaveBeenCalledTimes(1)
+		expect(getLinkToConfig).toHaveBeenNthCalledWith(1, 'key42')
+
+		expect(HttpClient.post).toHaveBeenCalledTimes(1)
+		expect(HttpClient.post).toHaveBeenNthCalledWith(1, 'key42', {
+			value: 'value1337'
+		})
+	})
+
+})

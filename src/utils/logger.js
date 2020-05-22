@@ -33,4 +33,62 @@ if (user) {
 }
 
 const logger = builder.build()
+
+/**
+ * Logs a debug message
+ *
+ * @param {String} message The message to log
+ * @param {Object=} context Additional context if needed
+ */
+const logDebug = (message, context = {}) => {
+	logger.debug(message, context)
+}
+
+/**
+ * Logs an error message
+ *
+ * @param {String} message The message to log
+ * @param {Object=} context Additional context if needed
+ */
+const logError = (message, context = {}) => {
+	logger.error(message, context)
+}
+
+/**
+ * Logs a fatal message
+ *
+ * @param {String} message The message to log
+ * @param {Object=} context Additional context if needed
+ */
+const logFatal = (message, context = {}) => {
+	logger.fatal(message, context)
+}
+
+/**
+ * Logs an info message
+ *
+ * @param {String} message The message to log
+ * @param {Object=} context Additional context if needed
+ */
+const logInfo = (message, context = {}) => {
+	logger.info(message, context)
+}
+
+/**
+ * Logs a warn message
+ *
+ * @param {String} message The message to log
+ * @param {Object=} context Additional context if needed
+ */
+const logWarn = (message, context = {}) => {
+	logger.warn(message, context)
+}
+
 export default logger
+export {
+	logDebug,
+	logError,
+	logFatal,
+	logInfo,
+	logWarn,
+}

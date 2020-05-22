@@ -1,5 +1,5 @@
 /**
- * @copyright Copyright (c) 2019 Georg Ehrke
+ * @copyright Copyright (c) 2020 Georg Ehrke
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
@@ -22,8 +22,9 @@
 import DavClient from 'cdav-library'
 import { generateRemoteUrl } from '@nextcloud/router'
 import { getRequestToken } from '@nextcloud/auth'
+import { CALDAV_BIRTHDAY_CALENDAR } from '../models/consts.js'
 
-function xhrProvider() {
+const xhrProvider = () => {
 	const headers = {
 		'X-Requested-With': 'XMLHttpRequest',
 		'requesttoken': getRequestToken(),
@@ -46,6 +47,108 @@ function xhrProvider() {
 	return xhr
 }
 
-export default new DavClient({
+const client = new DavClient({
 	rootUrl: generateRemoteUrl('dav'),
 }, xhrProvider)
+
+/**
+ * Initializes the client for use in the user-view
+ */
+const initializeClientForUserView = () => {
+	client.connect({ enableCalDAV: true })
+}
+
+/**
+ * Initializes the client for use in the public/embed-view
+ */
+const initializeClientForPublicView = () => {
+	client._createPublicCalendarHome()
+}
+
+/**
+ * Fetch all calendars from the server
+ *
+ * @returns {Promise<Calendar[]>}
+ */
+const findAllCalendars = () => {
+	return client.calendarHomes[0].findAllCalendars()
+}
+
+/**
+ * Fetch public calendars by their token
+ *
+ * @param {String[]} tokens List of tokens
+ * @returns {Promise<Calendar[]>}
+ */
+const findPublicCalendarsByToken = async(tokens) => {
+	const findPromises = []
+
+	for (const token of tokens) {
+		const promise = client.publicCalendarHome
+			.find(token)
+			.catch(() => null) // Catch outdated tokens
+
+		findPromises.push(promise)
+	}
+
+	const calendars = await Promise.all(findPromises)
+	return calendars.filter((calendar) => calendar !== null)
+}
+
+/**
+ * Creates a calendar
+ *
+ * @param {String} displayName Visible name
+ * @param {String} color Color
+ * @param {String[]} components Supported component set
+ * @param {Number} order Order of calendar in list
+ * @param {String} timezoneIcs ICS representation of timezone
+ * @returns {Promise<Calendar>}
+ */
+const createCalendar = async(displayName, color, components, order, timezoneIcs) => {
+	return client.calendarHomes[0].createCalendarCollection(displayName, color, components, order, timezoneIcs)
+}
+
+/**
+ * Creates a subscription
+ *
+ * This function does not return a subscription, but a cached calendar
+ *
+ * @param {String} displayName Visible name
+ * @param {String} color Color
+ * @param {String} source Link to WebCAL Source
+ * @param {Number} order Order of calendar in list
+ * @returns {Promise<Calendar>}
+ */
+const createSubscription = async(displayName, color, source, order) => {
+	return client.calendarHomes[0].createSubscribedCollection(displayName, color, source, order)
+}
+
+/**
+ * Enables the birthday calendar
+ */
+const enableBirthdayCalendar = async() => {
+	await client.calendarHomes[0].enableBirthdayCalendar()
+	return getBirthdayCalendar()
+}
+
+/**
+ * Gets the birthday calendar
+ *
+ * @returns {Promise<Calendar>}
+ */
+const getBirthdayCalendar = async() => {
+	return client.calendarHomes[0].find(CALDAV_BIRTHDAY_CALENDAR)
+}
+
+export default client
+export {
+	initializeClientForUserView,
+	initializeClientForPublicView,
+	findAllCalendars,
+	findPublicCalendarsByToken,
+	createCalendar,
+	createSubscription,
+	enableBirthdayCalendar,
+	getBirthdayCalendar,
+}

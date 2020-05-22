@@ -19,11 +19,100 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
+// import settingsStore from '../../../../src/store/settings.js'
 
 describe('store/settings test suite', () => {
 
-	it('should be true', () => {
-		expect(true).toEqual(true)
+	it('should provide a default state', () => {
+
+	})
+
+	it('should provide a mutation to toggle the eventLimit setting', () => {
+
+	})
+
+	it('should provide a mutation to toggle the popover setting', () => {
+
+	})
+
+	it('should provide a mutation to toggle the task setting', () => {
+
+	})
+
+	it('should provide a mutation to toggle the weekends setting', () => {
+
+	})
+
+	it('should provide a mutation to toggle the week-number setting', () => {
+
+	})
+
+	it('should provide a mutation to set the slot duration setting', () => {
+
+	})
+
+	it('should provide a mutation to set the timezone setting', () => {
+
+	})
+
+	it('should provide a mutation to set the settings initially', () => {
+
+	})
+
+	it('should provide a mutation to set the resolved moment locale', () => {
+
+	})
+
+	it('should provide a getter the check whether the user has a birthday calendar', () => {
+
+	})
+
+	it('should provide a getter the get the resolved timezone - automatic', () => {
+
+	})
+
+	it('should provide a getter the get the resolved timezone - non-automatic', () => {
+
+	})
+
+	it('should provide an action to toggle the birthday calendar - enabled to disabled', () => {
+
+	})
+
+	it('should provide an action to toggle the birthday calendar - disabled to enabled', () => {
+
+	})
+
+	it('should provide an action to toggle the event limit setting', () => {
+
+	})
+
+	it('should provide an action to toggle the popover setting', () => {
+
+	})
+
+	it('should provide an action to toggle the weekends setting', () => {
+
+	})
+
+	it('should provide an action to toggle the week-number setting', () => {
+
+	})
+
+	it('should provide an action to set the last used view', () => {
+
+	})
+
+	it('should provide an action to set the slot duration setting', () => {
+
+	})
+
+	it('should provide an action to set the timezone setting', () => {
+
+	})
+
+	it('should provide an action to initialize the calendar-js config', () => {
+
 	})
 
 })

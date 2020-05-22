@@ -34,6 +34,7 @@ import { translate as t } from '@nextcloud/l10n'
 import getTimezoneManager from '../services/timezoneDataProviderService.js'
 import Timezone from 'calendar-js/src/timezones/timezone.js'
 import CalendarComponent from 'calendar-js/src/components/calendarComponent.js'
+import { IMPORT_STAGE_IMPORTING, IMPORT_STAGE_PROCESSING } from '../models/consts.js'
 
 const state = {
 	calendars: [],
@@ -776,7 +777,7 @@ const actions = {
 	 * @param {Object} context the store mutations
 	 */
 	async importEventsIntoCalendar(context) {
-		context.commit('changeStage', 'importing')
+		context.commit('changeStage', IMPORT_STAGE_IMPORTING)
 
 		// Create a copy
 		const files = context.rootState.importFiles.importFiles.slice()
@@ -854,7 +855,7 @@ const actions = {
 		}
 
 		await Promise.all(requests)
-		context.commit('changeStage', 'default')
+		context.commit('changeStage', IMPORT_STAGE_PROCESSING)
 	},
 }
 
