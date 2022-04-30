@@ -26,9 +26,9 @@
 			{{ file.name }}
 		</div>
 		<CalendarPicker class="import-modal-file-item__calendar-select"
-			:calendar="calendar"
+			:value="calendar"
 			:calendars="calendars"
-			@selectCalendar="selectCalendar" />
+			@select-calendar="selectCalendar" />
 	</li>
 </template>
 
@@ -68,6 +68,8 @@ export default {
 			return this.$store.getters.getCalendarById(calendarId)
 		},
 		calendars() {
+			// TODO: remove once the false positive is fixed upstream
+			// eslint-disable-next-line vue/no-side-effects-in-computed-properties
 			const calendars = this.$store.getters.sortedCalendarFilteredByComponents(
 				this.file.parser.containsVEvents(),
 				this.file.parser.containsVJournals(),

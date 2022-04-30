@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,8 +23,8 @@
 /**
  * Get the factor for a given unit
  *
- * @param {String} unit The name of the unit to get the factor of
- * @returns {number}
+ * @param {string} unit The name of the unit to get the factor of
+ * @return {number}
  */
 export function getFactorForAlarmUnit(unit) {
 	switch (unit) {
@@ -51,8 +51,8 @@ export function getFactorForAlarmUnit(unit) {
 /**
  * Gets the amount of days / weeks, unit from total seconds
  *
- * @param {Number} totalSeconds Total amount of seconds
- * @returns {{amount: number, unit: string}}
+ * @param {number} totalSeconds Total amount of seconds
+ * @return {{amount: number, unit: string}}
  */
 export function getAmountAndUnitForTimedEvents(totalSeconds) {
 	// Before or after the event is handled somewhere else,
@@ -101,10 +101,10 @@ export function getAmountAndUnitForTimedEvents(totalSeconds) {
 /**
  * Get the total amount of seconds based on amount and unit for timed events
  *
- * @param {Number} amount Amount of unit
- * @param {String} unit Minutes/Hours/Days/Weeks
- * @param {Boolean=} isBefore Whether the reminder is before or after the event
- * @returns {number}
+ * @param {number} amount Amount of unit
+ * @param {string} unit Minutes/Hours/Days/Weeks
+ * @param {boolean=} isBefore Whether the reminder is before or after the event
+ * @return {number}
  */
 export function getTotalSecondsFromAmountAndUnitForTimedEvents(amount, unit, isBefore = true) {
 	return amount * getFactorForAlarmUnit(unit) * (isBefore ? -1 : 1)
@@ -113,8 +113,8 @@ export function getTotalSecondsFromAmountAndUnitForTimedEvents(amount, unit, isB
 /**
  * Gets the amount of days / weeks, unit, hours and minutes from total seconds
  *
- * @param {Number} totalSeconds Total amount of seconds
- * @returns {{amount: *, unit: *, hours: *, minutes: *}}
+ * @param {number} totalSeconds Total amount of seconds
+ * @return {{amount: *, unit: *, hours: *, minutes: *}}
  */
 export function getAmountHoursMinutesAndUnitForAllDayEvents(totalSeconds) {
 	const dayFactor = getFactorForAlarmUnit('days')
@@ -168,11 +168,11 @@ export function getAmountHoursMinutesAndUnitForAllDayEvents(totalSeconds) {
 /**
  * Get the total amount of seconds for all-day events
  *
- * @param {Number} amount amount of unit
- * @param {Number} hours Time of reminder
- * @param {Number} minutes Time of reminder
- * @param {String} unit days/weeks
- * @returns {Number}
+ * @param {number} amount amount of unit
+ * @param {number} hours Time of reminder
+ * @param {number} minutes Time of reminder
+ * @param {string} unit days/weeks
+ * @return {number}
  */
 export function getTotalSecondsFromAmountHourMinutesAndUnitForAllDayEvents(amount, hours, minutes, unit) {
 	if (unit === 'weeks') {

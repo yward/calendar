@@ -1,7 +1,7 @@
 # Nextcloud Calendar 
 
-[![Build Status](https://travis-ci.org/nextcloud/calendar.svg?branch=master)](https://travis-ci.org/nextcloud/calendar)
-[![Coverage Status](https://coveralls.io/repos/github/nextcloud/calendar/badge.svg?branch=master)](https://coveralls.io/github/nextcloud/calendar?branch=master)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/nextcloud/calendar/Build)
+![Codecov](https://img.shields.io/codecov/c/github/nextcloud/calendar)
 
 **A calendar app for [Nextcloud](http://nextcloud.com). Easily sync events from various devices with your Nextcloud and edit them online.**  
 
@@ -9,26 +9,27 @@
 
 ## :blue_heart: :tada: Why is this so awesome?
 
-* :rocket: **Integration with other Nextcloud apps!** Currently Contacts and Circles – more to come.
+* :rocket: **Integration with other Nextcloud apps!** Like Contacts, Talk, Tasks, Deck and Circles
 * :globe_with_meridians: **WebCal Support!** Want to see your favorite team's matchdays in your calendar? No problem!
 * :raising_hand: **Attendees!** Invite people to your events
-* :watch: **Free/Busy:** See when your attendees are available to meet
-* :alarm_clock: **Reminders!** Get alarms for events inside your browser and via email.
+* :watch: **Free/Busy!** See when your attendees are available to meet
+* :alarm_clock: **Reminders!** Get alarms for events inside your browser and via email
+* :mag: **Search!** Find your events at ease
+* :ballot_box_with_check: **Tasks!** See tasks or Deck cards with a due date directly in the calendar
+* :speaker: **Talk rooms!** Create an associated Talk room when booking a meeting with just one click
+* :calendar: **Appointment booking** Send people a link so they can book an appointment with you [using this app](https://apps.nextcloud.com/apps/appointments)
 * :see_no_evil: **We’re not reinventing the wheel!** Based on the great [c-dav library](https://github.com/nextcloud/cdav-library), [ical.js](https://github.com/mozilla-comm/ical.js) and [fullcalendar](https://github.com/fullcalendar/fullcalendar) libraries.
 
-And in the works for the [coming versions](https://github.com/nextcloud/calendar/milestones/):
-* :mag: Search for events ([#8](https://github.com/nextcloud/calendar/issues/8))
-* :heavy_minus_sign: List view ([#402](https://github.com/nextcloud/calendar/issues/402))
-* :ballot_box_with_check: Show tasks with a due date ([#28](https://github.com/nextcloud/calendar/issues/28))
 
 ## :hammer_and_wrench: Installation
 
-In your Nextcloud, simply navigate to »Apps«, choose the category »Organization«, find the Calendar app and enable it.
-Then open the Calendar app from the app menu.
+The app is distributed through the [app store](https://apps.nextcloud.com/apps/calendar) and you can install it [right from your Nextcloud installation](https://docs.nextcloud.com/server/stable/admin_manual/apps_management.html).
+
+Release tarballs are hosted at https://github.com/nextcloud-releases/calendar/releases.
 
 ## :satellite: Support
 
-If you need assistance or want to ask a question about Calendar, you are welcome to [ask for support](https://help.nextcloud.com/c/apps/calendar) in our Forums or the [IRC-Channel](https://webchat.freenode.net/?channels=nextcloud-calendar).
+If you need assistance or want to ask a question about Calendar, you are welcome to [ask for support](https://help.nextcloud.com/c/apps/calendar) in our Forums.
 If you have found a bug, feel free to open a new Issue on GitHub. Keep in mind, that this repository only manages the frontend.
 If you find bugs or have problems with the CalDAV-Backend, you should ask the team at [Nextcloud server](https://github.com/nextcloud/server) for help!
 
@@ -42,27 +43,7 @@ If you find bugs or have problems with the CalDAV-Backend, you should ask the te
 
 ## Maintainers
 
-- [Georg Ehrke](https://github.com/georgehrke)
-- [Thomas Citharel](https://github.com/tcitworld)
-- [and many more](https://github.com/nextcloud/calendar/graphs/contributors)
-
-If you’d like to join, just go through the [issue list](https://github.com/nextcloud/calendar/issues?utf8=✓&q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22+) and fix some. :)   
-We’re also in [#nextcloud-calendar on freenode IRC](https://webchat.freenode.net/?channels=nextcloud-calendar).
-
-We’d like to thank [BrowserStack](https://www.browserstack.com) for providing us with a free subscription.
-
-## Nightly builds / Pre-releases
-
-Instead of setting everything up manually, you can just [download the nightly builds](https://nightly.portknox.net/calendar/?C=M;O=D) or [download a pre-release](https://github.com/nextcloud/calendar/releases) instead.
-Nightly builds are updated every 24 hours, and are pre-configured with all the needed dependencies.
-
-1. Download
-2. Extract the tar archive to 'path-to-nextcloud/apps'
-3. Navigate to »Apps«, choose the category »Productivity«, find the Calendar app and enable it.
-
-The nightly builds are provided by [Portknox.net](https://portknox.net)
-
-When reporting issues, please mention the date in the tar archive's name.
+* [Nextcloud Groupware team](https://github.com/nextcloud/groupware/#members)
 
 ## Build the app
 

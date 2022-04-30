@@ -2,10 +2,12 @@
  * @copyright Copyright (c) 2019 Georg Ehrke
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
+ *
  * @author John Molakvoæ <skjnldsv@protonmail.com>
+ *
  * @author Thomas Citharel <tcit@tcit.fr>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -34,11 +36,13 @@ import importFiles from './importFiles'
 import importState from './importState'
 import principals from './principals.js'
 import settings from './settings.js'
+import appointmentConfigs from './appointmentConfigs'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
 	modules: {
+		appointmentConfigs,
 		calendarObjectInstance,
 		calendarObjects,
 		calendars,

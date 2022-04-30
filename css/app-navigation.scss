@@ -8,6 +8,7 @@
  * @author Raghu Nayyar
  * @author Georg Ehrke
  * @author John Molakvoæ
+ * @author Richard Steinmetz <richard@steinmetz.cloud>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -37,7 +38,6 @@
 		border-radius: 0;
 		font-weight: normal;
 		margin: 3px -1px 3px 0;
-		padding: 8px;
 		flex-grow: 1;
 	}
 
@@ -171,24 +171,19 @@
 
 		.avatar.published {
 			background-color: var(--color-primary);
+			color: white;
 		}
 	}
 
 	.app-navigation-entry__multiselect {
-		padding-left: 8px;
-	}
+		padding: 0 8px;
 
-	.app-navigation-entry__icon-bullet-disabled {
-		display: block;
-		// there is 2 margins
-		padding: 15px;
-		div {
-			border: 1px solid var(--color-border-dark);
-			width: 15px;
-			height: 15px;
-			cursor: pointer;
-			transition: background 100ms ease-in-out;
-			border-radius: 50%;
+		.multiselect {
+			width: 100%;
+
+			&__content-wrapper {
+				z-index: 200 !important;
+			}
 		}
 	}
 
@@ -299,13 +294,16 @@
 				}
 			}
 		}
-	}
 
-	#app-settings {
+		.appointment-config-list {
+			.app-navigation-caption {
+				margin-top: 22px;
+			}
 
-		#app-settings-content {
-			overflow-y: visible !important;
+			.app-navigation-entry-link,
+			.app-navigation-entry-link * {
+				cursor: default;
+			}
 		}
-
 	}
 }

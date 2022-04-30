@@ -21,10 +21,9 @@
 
 <template>
 	<li class="settings-fieldset-interior-item settings-fieldset-interior-item--timezone">
-		<TimezoneSelect
-			:additional-timezones="additionalTimezones"
+		<TimezonePicker :additional-timezones="additionalTimezones"
 			:value="timezone"
-			@change="setTimezoneValue" />
+			@input="setTimezoneValue" />
 	</li>
 </template>
 
@@ -33,8 +32,8 @@ import {
 	mapState,
 } from 'vuex'
 
-import TimezoneSelect from '../../Shared/TimezoneSelect.vue'
-import detectTimezone from '../../../services/timezoneDetectionService.js'
+import TimezonePicker from '@nextcloud/vue/dist/Components/TimezonePicker'
+import { detectTimezone } from '../../../services/timezoneDetectionService.js'
 import {
 	showInfo,
 } from '@nextcloud/dialogs'
@@ -42,7 +41,7 @@ import {
 export default {
 	name: 'SettingsTimezoneSelect',
 	components: {
-		TimezoneSelect,
+		TimezonePicker,
 	},
 	props: {
 		isDisabled: {
@@ -57,7 +56,7 @@ export default {
 		/**
 		 * Offer "Automatic" as an additional timezone
 		 *
-		 * @returns {Object[]}
+		 * @return {object[]}
 		 */
 		additionalTimezones() {
 			return [{
@@ -73,7 +72,7 @@ export default {
 		/**
 		 * Updates the timezone set by the user
 		 *
-		 * @param {String} timezoneId New timezoneId to save
+		 * @param {string} timezoneId New timezoneId to save
 		 */
 		setTimezoneValue(timezoneId) {
 			this.$store.dispatch('setTimezone', { timezoneId })

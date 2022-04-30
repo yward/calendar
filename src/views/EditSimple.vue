@@ -1,6 +1,7 @@
 <!--
   - @copyright Copyright (c) 2019 Georg Ehrke <oc.list@georgehrke.com>
   - @author Georg Ehrke <oc.list@georgehrke.com>
+  - @author Richard Steinmetz <richard@steinmetz.cloud>
   -
   - @license GNU AGPL version 3 or any later version
   -
@@ -20,98 +21,145 @@
   -->
 
 <template>
-	<Popover
-		ref="popover"
+	<Popover ref="popover"
 		:open="isVisible"
 		:auto-hide="false"
 		:placement="placement"
 		:boundaries-element="boundaryElement"
 		open-class="event-popover"
 		trigger="manual">
-		<PopoverLoadingIndicator
-			v-if="isLoading" />
+		<template v-if="isLoading">
+			<PopoverLoadingIndicator />
+		</template>
 
-		<div class="event-popover__top-right-actions">
-			<Actions v-if="!isLoading && isReadOnly">
-				<ActionButton
-					icon="icon-fullscreen"
-					@click="showMore">
-					{{ $t('calendar', 'Show more details') }}
-				</ActionButton>
-			</Actions>
-			<Actions v-if="!isLoading">
-				<ActionButton
-					icon="icon-close"
-					@click="cancel">
-					{{ $t('calendar', 'Close') }}
-				</ActionButton>
-			</Actions>
-		</div>
+		<template v-else-if="isError">
+			<div class="event-popover__top-right-actions">
+				<Actions>
+					<ActionButton @click="cancel">
+						<template #icon>
+							<Close :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Close') }}
+					</ActionButton>
+				</Actions>
+			</div>
 
-		<IllustrationHeader
-			v-if="!isLoading"
-			:color="illustrationColor"
-			:illustration-url="backgroundImage" />
+			<EmptyContent>
+				{{ $t('calendar', 'Event does not exist') }}
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
+				<template #desc>
+					{{ error }}
+				</template>
+			</EmptyContent>
+		</template>
 
-		<PropertyTitle
-			v-if="!isLoading"
-			:value="title"
-			:is-read-only="isReadOnly"
-			@update:value="updateTitle" />
+		<template v-else>
+			<div class="event-popover__top-right-actions">
+				<Actions v-if="isReadOnly">
+					<ActionButton @click="showMore">
+						<template #icon>
+							<ArrowExpand :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Show more details') }}
+					</ActionButton>
+				</Actions>
+				<Actions v-if="!isLoading && !isError" :force-menu="true">
+					<ActionLink v-if="!hideEventExport && hasDownloadURL"
+						:href="downloadURL">
+						<template #icon>
+							<Download :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Export') }}
+					</ActionLink>
+					<ActionButton v-if="canDelete && !canCreateRecurrenceException" @click="deleteAndLeave(false)">
+						<template #icon>
+							<Delete :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Delete') }}
+					</ActionButton>
+					<ActionButton v-if="canDelete && canCreateRecurrenceException" @click="deleteAndLeave(false)">
+						<template #icon>
+							<Delete :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Delete this occurrence') }}
+					</ActionButton>
+					<ActionButton v-if="canDelete && canCreateRecurrenceException" @click="deleteAndLeave(true)">
+						<template #icon>
+							<Delete :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Delete this and all future') }}
+					</ActionButton>
+				</Actions>
+				<Actions>
+					<ActionButton @click="cancel">
+						<template #icon>
+							<Close :size="20" decorative />
+						</template>
+						{{ $t('calendar', 'Close') }}
+					</ActionButton>
+				</Actions>
+			</div>
 
-		<PropertyCalendarPicker
-			v-if="!isLoading && showCalendarPicker"
-			:calendars="calendars"
-			:calendar="selectedCalendar"
-			:is-read-only="isReadOnly"
-			@selectCalendar="changeCalendar" />
+			<IllustrationHeader :color="illustrationColor"
+				:illustration-url="backgroundImage" />
 
-		<PropertyTitleTimePicker
-			v-if="!isLoading"
-			:start-date="startDate"
-			:start-timezone="startTimezone"
-			:end-date="endDate"
-			:end-timezone="endTimezone"
-			:is-all-day="isAllDay"
-			:is-read-only="isReadOnly"
-			:can-modify-all-day="canModifyAllDay"
-			:user-timezone="currentUserTimezone"
-			@updateStartDate="updateStartDate"
-			@updateStartTimezone="updateStartTimezone"
-			@updateEndDate="updateEndDate"
-			@updateEndTimezone="updateEndTimezone"
-			@toggleAllDay="toggleAllDay" />
+			<PropertyTitle :value="title"
+				:is-read-only="isReadOnly"
+				@update:value="updateTitle" />
 
-		<PropertyText
-			v-if="!isLoading && hasLocation"
-			:autosize="isExpanded"
-			:is-read-only="isReadOnly"
-			:prop-model="rfcProps.location"
-			:value="location"
-			@update:value="updateLocation" />
-		<PropertyText
-			v-if="!isLoading && hasDescription"
-			:autosize="isExpanded"
-			:is-read-only="isReadOnly"
-			:prop-model="rfcProps.description"
-			:value="description"
-			@update:value="updateDescription" />
+			<PropertyCalendarPicker v-if="showCalendarPicker"
+				:calendars="calendars"
+				:calendar="selectedCalendar"
+				:is-read-only="isReadOnly"
+				@select-calendar="changeCalendar" />
 
-		<SaveButtons
-			v-if="!isLoading && !isReadOnly"
-			class="event-popover__buttons"
-			:can-create-recurrence-exception="canCreateRecurrenceException"
-			:is-new="isNew"
-			:force-this-and-all-future="forceThisAndAllFuture"
-			:show-more-button="true"
-			@saveThisOnly="saveAndLeave(false)"
-			@saveThisAndAllFuture="saveAndLeave(true)"
-			@showMore="showMore" />
+			<PropertyTitleTimePicker :start-date="startDate"
+				:start-timezone="startTimezone"
+				:end-date="endDate"
+				:end-timezone="endTimezone"
+				:is-all-day="isAllDay"
+				:is-read-only="isReadOnly"
+				:can-modify-all-day="canModifyAllDay"
+				:user-timezone="currentUserTimezone"
+				@update-start-date="updateStartDate"
+				@update-start-timezone="updateStartTimezone"
+				@update-end-date="updateEndDate"
+				@update-end-timezone="updateEndTimezone"
+				@toggle-all-day="toggleAllDay" />
+
+			<PropertyText :is-read-only="isReadOnly"
+				:prop-model="rfcProps.location"
+				:value="location"
+				@update:value="updateLocation" />
+			<PropertyText :is-read-only="isReadOnly"
+				:prop-model="rfcProps.description"
+				:value="description"
+				@update:value="updateDescription" />
+
+			<InvitationResponseButtons v-if="isViewedByAttendee && userAsAttendee && !isReadOnly"
+				:attendee="userAsAttendee"
+				:calendar-id="calendarId"
+				@close="closeEditorAndSkipAction" />
+
+			<SaveButtons v-if="!isReadOnly"
+				class="event-popover__buttons"
+				:can-create-recurrence-exception="canCreateRecurrenceException"
+				:is-new="isNew"
+				:force-this-and-all-future="forceThisAndAllFuture"
+				:show-more-button="true"
+				@save-this-only="saveAndLeave(false)"
+				@save-this-and-all-future="saveAndLeave(true)"
+				@show-more="showMore" />
+		</template>
 	</Popover>
 </template>
 <script>
 import Actions from '@nextcloud/vue/dist/Components/Actions'
 import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
+import ActionLink from '@nextcloud/vue/dist/Components/ActionLink'
+import EmptyContent from '@nextcloud/vue/dist/Components/EmptyContent'
 import Popover from '@nextcloud/vue/dist/Components/Popover'
 import EditorMixin from '../mixins/EditorMixin'
 import IllustrationHeader from '../components/Editor/IllustrationHeader.vue'
@@ -122,6 +170,14 @@ import PropertyText from '../components/Editor/Properties/PropertyText.vue'
 import SaveButtons from '../components/Editor/SaveButtons.vue'
 import PopoverLoadingIndicator from '../components/Popover/PopoverLoadingIndicator.vue'
 import { getPrefixedRoute } from '../utils/router.js'
+import InvitationResponseButtons from '../components/Editor/InvitationResponseButtons'
+
+import ArrowExpand from 'vue-material-design-icons/ArrowExpand.vue'
+import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
+import Close from 'vue-material-design-icons/Close.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import { mapState } from 'vuex'
 
 export default {
 	name: 'EditSimple',
@@ -136,27 +192,43 @@ export default {
 		Popover,
 		Actions,
 		ActionButton,
+		ActionLink,
+		EmptyContent,
+		ArrowExpand,
+		CalendarBlank,
+		Close,
+		Download,
+		Delete,
+		InvitationResponseButtons,
 	},
 	mixins: [
 		EditorMixin,
 	],
+	computed: {
+	  ...mapState({
+		  hideEventExport: (state) => state.settings.hideEventExport,
+	  }),
+	},
 	data() {
 		return {
 			placement: 'auto',
 			hasLocation: false,
 			hasDescription: false,
 			boundaryElement: document.querySelector('#app-content > .fc'),
+			isVisible: true,
 		}
 	},
 	watch: {
-		eventComponent() {
-			const isNew = this.$route.name === 'NewPopoverView'
-			this.$refs.popover
-				.$children[0]
-				.$refs.trigger = this.getDomElementForPopover(isNew, this.$route)
-			this.$refs.popover
-				.$children[0]
-				.$_restartPopper()
+		$route(to, from) {
+			// Update the popover position by updating its reference element.
+			const isNew = to.name === 'NewPopoverView'
+			const popover = this.$refs.popover.$children[0]
+			popover.$_updatePopper(() => {
+				popover.popperInstance.reference = this.getDomElementForPopover(isNew, to)
+			})
+
+			// Hide popover when changing the view until the user selects a slot again
+			this.isVisible = to.params.view === from.params.view
 		},
 		calendarObjectInstance() {
 			this.hasLocation = false
@@ -174,15 +246,12 @@ export default {
 		this.$nextTick(() => {
 			const isNew = this.$route.name === 'NewPopoverView'
 
-			// TODO: test beforeRouteUpdate
-
 			// V3 of V-Tooltip will have a prop to define the reference element for popper.js
 			// For now we have to stick to this ugly hack
 			// https://github.com/Akryum/v-tooltip/issues/60
 			this.$refs.popover
 				.$children[0]
 				.$refs.trigger = this.getDomElementForPopover(isNew, this.$route)
-			this.isVisible = true
 		})
 	},
 	methods: {
@@ -208,7 +277,7 @@ export default {
 				this.placement = 'auto'
 
 				if (!matchingDomObject) {
-					matchingDomObject = document.querySelector(`.fc-event[data-is-new="yes"]`)
+					matchingDomObject = document.querySelector('.fc-event[data-is-new="yes"]')
 				}
 			} else {
 				const objectId = route.params.object
@@ -230,17 +299,6 @@ export default {
 
 			return matchingDomObject
 		},
-	},
-	beforeRouteUpdate(to, from, next) {
-		const isNew = to.name === 'NewPopoverView'
-		this.$refs.popover
-			.$children[0]
-			.$refs.trigger = this.getDomElementForPopover(isNew, to)
-		this.$refs.popover
-			.$children[0]
-			.$_restartPopper()
-
-		next()
 	},
 }
 </script>

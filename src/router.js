@@ -1,8 +1,9 @@
 /**
  * @copyright Copyright (c) 2019 Georg Ehrke
+ *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +27,12 @@ import { getRootUrl, generateUrl } from '@nextcloud/router'
 import Calendar from './views/Calendar'
 import EditSimple from './views/EditSimple'
 import EditSidebar from './views/EditSidebar'
-import { getInitialView } from './utils/router.js'
+import {
+	getDefaultEndDateForNewEvent,
+	getDefaultStartDateForNewEvent,
+	getInitialView,
+	getPreferredEditorRoute,
+} from './utils/router.js'
 
 Vue.use(Router)
 
@@ -98,19 +104,24 @@ const router = new Router({
 			redirect: `/embed/:tokens/${getInitialView()}/now`,
 		},
 		{
+			path: '/new',
+			redirect: () => `/${getInitialView()}/now/new/${getPreferredEditorRoute()}/0/${getDefaultStartDateForNewEvent()}/${getDefaultEndDateForNewEvent()}`,
+		},
+		{
+			path: '/new/:allDay/:dtstart/:dtend',
+			redirect: () => `/${getInitialView()}/:dtstart/new/${getPreferredEditorRoute()}/:allDay/:dtstart/:dtend`,
+		},
+		{
 			path: '/edit/:object',
-			redirect: `/${getInitialView()}/now/edit/sidebar/:object/next`,
+			redirect: () => `/${getInitialView()}/now/edit/${getPreferredEditorRoute()}/:object/next`,
 		},
 		{
 			path: '/edit/:object/:recurrenceId',
-			redirect: `/${getInitialView()}/now/edit/sidebar/:object/:recurrenceId`,
+			redirect: () => `/${getInitialView()}/now/edit/${getPreferredEditorRoute()}/:object/:recurrenceId`,
 		},
 		/**
 		 * This is the main route that contains the current view and viewed day
 		 * It has to be last, so that other routes starting with /p/, etc. match first
-		 *
-		 *
-		 *
 		 */
 		{
 			path: '/:view/:firstDay',

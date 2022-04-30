@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -38,6 +38,13 @@ const PRINCIPAL_PREFIX_CIRCLE = 'principal:principals/circles/'
 const PRINCIPAL_PREFIX_CALENDAR_RESOURCE = 'principal:principals/calendar-resources/'
 const PRINCIPAL_PREFIX_CALENDAR_ROOM = 'principal:principals/calendar-rooms/'
 
+const CALDAV_BIRTHDAY_CALENDAR = 'contact_birthdays'
+
+const IMPORT_STAGE_DEFAULT = 'default'
+const IMPORT_STAGE_IMPORTING = 'importing'
+const IMPORT_STAGE_AWAITING_USER_SELECT = 'awaitingUserSelect'
+const IMPORT_STAGE_PROCESSING = 'processing'
+
 export {
 	COMPONENT_NAME_EVENT,
 	COMPONENT_NAME_JOURNAL,
@@ -55,4 +62,9 @@ export {
 	PRINCIPAL_PREFIX_CIRCLE,
 	PRINCIPAL_PREFIX_CALENDAR_RESOURCE,
 	PRINCIPAL_PREFIX_CALENDAR_ROOM,
+	CALDAV_BIRTHDAY_CALENDAR,
+	IMPORT_STAGE_DEFAULT,
+	IMPORT_STAGE_IMPORTING,
+	IMPORT_STAGE_AWAITING_USER_SELECT,
+	IMPORT_STAGE_PROCESSING,
 }

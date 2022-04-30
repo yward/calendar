@@ -20,54 +20,54 @@
   -->
 
 <template>
-	<AppNavigationItem
-		:loading="calendar.loading"
+	<AppNavigationItem :loading="calendar.loading"
 		:title="calendar.displayName || $t('calendar', 'Untitled calendar')"
 		:menu-open.sync="menuOpen"
 		@click.prevent.stop="toggleEnabled">
-		<AppNavigationIconBullet
-			v-if="calendar.enabled"
+		<AppNavigationIconBullet v-if="calendar.enabled"
 			slot="icon"
 			:color="calendar.color"
 			@click.prevent.stop="toggleEnabled" />
 
 		<template slot="counter">
-			<Avatar
-				:user="owner"
+			<Avatar :user="owner"
 				:is-guest="true"
 				:disable-tooltip="true"
 				:disable-menu="true" />
 		</template>
 
 		<template slot="actions">
-			<ActionButton
-				v-if="showCopySubscriptionLinkLabel"
-				icon="icon-calendar-dark"
+			<ActionButton v-if="showCopySubscriptionLinkLabel"
 				@click.prevent.stop="copySubscriptionLink">
+				<template #icon>
+					<LinkVariant :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copy subscription link') }}
 			</ActionButton>
-			<ActionText
-				v-if="showCopySubscriptionLinkSpinner"
+			<ActionText v-if="showCopySubscriptionLinkSpinner"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Copying link …') }}
 			</ActionText>
-			<ActionText
-				v-if="showCopySubscriptionLinkSuccess"
-				icon="icon-calendar-dark">
+			<ActionText v-if="showCopySubscriptionLinkSuccess">
+				<template #icon>
+					<LinkVariant :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copied link') }}
 			</ActionText>
-			<ActionText
-				v-if="showCopySubscriptionLinkError"
-				icon="icon-calendar-dark">
+			<ActionText v-if="showCopySubscriptionLinkError">
+				<template #icon>
+					<LinkVariant :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Could not copy link') }}
 			</ActionText>
 
-			<ActionLink
-				icon="icon-download"
-				target="_blank"
+			<ActionLink target="_blank"
 				:href="downloadUrl">
-				{{ $t('calendar', 'Download') }}
+				<template #icon>
+					<Download :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Export') }}
 			</ActionLink>
 		</template>
 	</AppNavigationItem>
@@ -88,6 +88,9 @@ import {
 	showError,
 } from '@nextcloud/dialogs'
 
+import Download from 'vue-material-design-icons/Download.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+
 export default {
 	name: 'PublicCalendarListItem',
 	components: {
@@ -97,6 +100,8 @@ export default {
 		ActionText,
 		AppNavigationIconBullet,
 		AppNavigationItem,
+		Download,
+		LinkVariant,
 	},
 	props: {
 		calendar: {
@@ -104,7 +109,7 @@ export default {
 			required: true,
 		},
 	},
-	data: function() {
+	data() {
 		return {
 			// copy subscription link:
 			showCopySubscriptionLinkLabel: true,
@@ -119,7 +124,7 @@ export default {
 		/**
 		 * Download url of the calendar
 		 *
-		 * @returns {String}
+		 * @return {string}
 		 */
 		downloadUrl() {
 			return this.calendar.url + '?export'
@@ -127,7 +132,7 @@ export default {
 		/**
 		 * TODO: this should use principals and principal.userId
 		 *
-		 * @returns {String}
+		 * @return {string}
 		 */
 		owner() {
 			const lastIndex = this.calendar.owner.lastIndexOf('dav/principals/users/')
@@ -155,12 +160,7 @@ export default {
 			const rootURL = generateRemoteUrl('dav')
 			const url = new URL(this.calendar.url + '?export', rootURL)
 
-			if (url.protocol === 'http:') {
-				url.protocol = 'webcal:'
-			}
-			if (url.protocol === 'https:') {
-				url.protocol = 'webcals:'
-			}
+			url.protocol = 'webcal:'
 
 			// copy link for calendar to clipboard
 			try {

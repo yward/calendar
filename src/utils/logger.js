@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,17 +20,67 @@
  *
  */
 import { getLoggerBuilder } from '@nextcloud/logger'
-import { getCurrentUser } from '@nextcloud/auth'
 
-const builder = getLoggerBuilder()
-const user = getCurrentUser()
+const logger = getLoggerBuilder()
+	.setApp('calendar')
+	.detectUser()
+	.build()
 
-builder.setApp('calendar')
-if (user) {
-	builder.setUid('authenticated:' + user.uid)
-} else {
-	builder.setUid('unauthenticated')
+/**
+ * Logs a debug message
+ *
+ * @param {string} message The message to log
+ * @param {object=} context Additional context if needed
+ */
+const logDebug = (message, context = {}) => {
+	logger.debug(message, context)
 }
 
-const logger = builder.build()
+/**
+ * Logs an error message
+ *
+ * @param {string} message The message to log
+ * @param {object=} context Additional context if needed
+ */
+const logError = (message, context = {}) => {
+	logger.error(message, context)
+}
+
+/**
+ * Logs a fatal message
+ *
+ * @param {string} message The message to log
+ * @param {object=} context Additional context if needed
+ */
+const logFatal = (message, context = {}) => {
+	logger.fatal(message, context)
+}
+
+/**
+ * Logs an info message
+ *
+ * @param {string} message The message to log
+ * @param {object=} context Additional context if needed
+ */
+const logInfo = (message, context = {}) => {
+	logger.info(message, context)
+}
+
+/**
+ * Logs a warn message
+ *
+ * @param {string} message The message to log
+ * @param {object=} context Additional context if needed
+ */
+const logWarn = (message, context = {}) => {
+	logger.warn(message, context)
+}
+
 export default logger
+export {
+	logDebug,
+	logError,
+	logFatal,
+	logInfo,
+	logWarn,
+}

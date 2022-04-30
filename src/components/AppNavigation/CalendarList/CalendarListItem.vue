@@ -20,102 +20,126 @@
   -->
 
 <template>
-	<AppNavigationItem
-		v-click-outside="closeShareMenu"
+	<AppNavigationItem v-click-outside="closeShareMenu"
 		:loading="calendar.loading"
 		:title="calendar.displayName || $t('calendar', 'Untitled calendar')"
 		:class="{deleted: !!deleteTimeout, disabled: !calendar.enabled, 'open-sharing': shareMenuOpen}"
 		@click.prevent.stop="toggleEnabled">
-		<AppNavigationIconBullet
-			v-if="calendar.enabled"
-			slot="icon"
-			:color="calendar.color"
-			@click.prevent.stop="toggleEnabled" />
-		<AppNavigationDisabledCalendarIconBullet
-			v-if="!calendar.enabled"
-			slot="icon"
-			@click.prevent.stop="toggleEnabled" />
+		<template slot="icon">
+			<Actions>
+				<ActionButton @click.prevent.stop="toggleEnabled">
+					<template #icon>
+						<CheckboxBlankCircle v-if="calendar.enabled"
+							:title="$t('calendar', 'Disable calendar')"
+							:size="20"
+							:fill-color="calendar.color" />
+						<CheckboxBlankCircleOutline v-else
+							:title="$t('calendar', 'Enable calendar')"
+							:size="20"
+							:fill-color="calendar.color" />
+					</template>
+				</ActionButton>
+			</Actions>
+		</template>
 
 		<template v-if="!deleteTimeout" slot="counter">
-			<Actions v-if="showSharingIcon">
-				<ActionButton :icon="sharingIconClass" @click="toggleShareMenu" />
+			<Actions v-if="showSharingIcon" class="sharing">
+				<ActionButton @click="toggleShareMenu">
+					<template #icon>
+						<LinkVariant v-if="isPublished" :size="20" decorative />
+						<ShareVariant v-else
+							:size="20"
+							decorative
+							:class="{share: !isShared}" />
+					</template>
+				</ActionButton>
 			</Actions>
 			<Avatar v-if="isSharedWithMe && loadedOwnerPrincipal" :user="ownerUserId" :display-name="ownerDisplayname" />
 			<div v-if="isSharedWithMe && !loadedOwnerPrincipal" class="icon icon-loading" />
 		</template>
 
 		<template v-if="!deleteTimeout" slot="actions">
-			<ActionButton
-				v-if="showRenameLabel"
-				icon="icon-rename"
+			<ActionButton v-if="showRenameLabel"
 				@click.prevent.stop="openRenameInput">
+				<template #icon>
+					<Pencil :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Edit name') }}
 			</ActionButton>
-			<ActionInput
-				v-if="showRenameInput"
-				icon="icon-rename"
+			<ActionInput v-if="showRenameInput"
 				:value="calendar.displayName"
-				@submit.prevent.stop="saveRenameInput" />
-			<ActionText
-				v-if="showRenameSaving"
+				@submit.prevent.stop="saveRenameInput">
+				<template #icon>
+					<Pencil :size="20" decorative />
+				</template>
+			</ActionInput>
+			<ActionText v-if="showRenameSaving"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Saving name …') }}
 			</ActionText>
-			<ActionButton
-				v-if="showColorLabel"
-				icon="icon-rename"
+			<ActionButton v-if="showColorLabel"
 				@click.prevent.stop="openColorInput">
+				<template #icon>
+					<Pencil :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Edit color') }}
 			</ActionButton>
-			<ActionInput
-				v-if="showColorInput"
-				icon="icon-rename"
+			<ActionInput v-if="showColorInput"
 				:value="calendar.color"
 				type="color"
-				@submit.prevent.stop="saveColorInput" />
-			<ActionText
-				v-if="showColorSaving"
+				@submit.prevent.stop="saveColorInput">
+				<template #icon>
+					<Pencil :size="20" decorative />
+				</template>
+			</ActionInput>
+			<ActionText v-if="showColorSaving"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Saving color …') }}
 			</ActionText>
-			<ActionButton
-				icon="icon-clippy"
-				@click.stop.prevent="copyLink">
+			<ActionButton @click.stop.prevent="copyLink">
+				<template #icon>
+					<LinkVariant :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copy private link') }}
 			</ActionButton>
-			<ActionLink
-				icon="icon-download"
-				target="_blank"
+			<ActionLink target="_blank"
 				:href="downloadUrl">
-				{{ $t('calendar', 'Download') }}
+				<template #icon>
+					<Download :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Export') }}
 			</ActionLink>
-			<ActionButton
-				v-if="calendar.isSharedWithMe"
-				icon="icon-delete"
+			<ActionButton v-if="calendar.isSharedWithMe"
 				@click.prevent.stop="deleteCalendar">
+				<template #icon>
+					<Close :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Unshare from me') }}
 			</ActionButton>
-			<ActionButton
-				v-if="!calendar.isSharedWithMe"
-				icon="icon-delete"
+			<ActionButton v-if="!calendar.isSharedWithMe"
 				@click.prevent.stop="deleteCalendar">
+				<template #icon>
+					<Delete :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Delete') }}
 			</ActionButton>
 		</template>
 
 		<template v-if="!!deleteTimeout" slot="actions">
-			<ActionButton
-				v-if="calendar.isSharedWithMe"
-				icon="icon-history"
+			<ActionButton v-if="calendar.isSharedWithMe"
 				@click.prevent.stop="cancelDeleteCalendar">
+				<template #icon>
+					<Undo :size="20" decorative />
+				</template>
 				{{ $n('calendar', 'Unsharing the calendar in {countdown} second', 'Unsharing the calendar in {countdown} seconds', countdown, { countdown }) }}
 			</ActionButton>
-			<ActionButton
-				v-if="!calendar.isSharedWithMe"
-				icon="icon-history"
+			<ActionButton v-else
 				@click.prevent.stop="cancelDeleteCalendar">
+				<template #icon>
+					<Undo :size="20" decorative />
+				</template>
 				{{ $n('calendar', 'Deleting the calendar in {countdown} second', 'Deleting the calendar in {countdown} seconds', countdown, { countdown }) }}
 			</ActionButton>
 		</template>
@@ -141,7 +165,6 @@ import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
 import ActionInput from '@nextcloud/vue/dist/Components/ActionInput'
 import ActionLink from '@nextcloud/vue/dist/Components/ActionLink'
 import ActionText from '@nextcloud/vue/dist/Components/ActionText'
-import AppNavigationIconBullet from '@nextcloud/vue/dist/Components/AppNavigationIconBullet'
 import AppNavigationItem from '@nextcloud/vue/dist/Components/AppNavigationItem'
 import ClickOutside from 'vue-click-outside'
 import {
@@ -153,10 +176,18 @@ import {
 	generateRemoteUrl,
 } from '@nextcloud/router'
 
-import AppNavigationDisabledCalendarIconBullet from './AppNavigationDisabledCalendarIconBullet.vue'
 import CalendarListItemSharingSearch from './CalendarListItemSharingSearch.vue'
 import CalendarListItemSharingPublishItem from './CalendarListItemSharingPublishItem.vue'
 import CalendarListItemSharingShareItem from './CalendarListItemSharingShareItem.vue'
+import CheckboxBlankCircle from 'vue-material-design-icons/CheckboxBlankCircle.vue'
+import CheckboxBlankCircleOutline from 'vue-material-design-icons/CheckboxBlankCircleOutline.vue'
+import Close from 'vue-material-design-icons/Close.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
+import Undo from 'vue-material-design-icons/Undo.vue'
 
 export default {
 	name: 'CalendarListItem',
@@ -167,12 +198,19 @@ export default {
 		ActionInput,
 		ActionLink,
 		ActionText,
-		AppNavigationDisabledCalendarIconBullet,
-		AppNavigationIconBullet,
 		AppNavigationItem,
 		CalendarListItemSharingSearch,
 		CalendarListItemSharingPublishItem,
 		CalendarListItemSharingShareItem,
+		CheckboxBlankCircle,
+		CheckboxBlankCircleOutline,
+		Close,
+		Delete,
+		Download,
+		LinkVariant,
+		Pencil,
+		ShareVariant,
+		Undo,
 	},
 	directives: {
 		ClickOutside,
@@ -183,7 +221,7 @@ export default {
 			required: true,
 		},
 	},
-	data: function() {
+	data() {
 		return {
 			// Rename action
 			showRenameLabel: true,
@@ -205,7 +243,7 @@ export default {
 		/**
 		 * Download url of the calendar
 		 *
-		 * @returns {String}
+		 * @return {string}
 		 */
 		downloadUrl() {
 			return this.calendar.url + '?export'
@@ -214,37 +252,16 @@ export default {
 		 * Whether or not to display the sharing icon.
 		 * It will only be displayed when the calendar is either sharable or publishable
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		showSharingIcon() {
 			return this.calendar.canBeShared || this.calendar.canBePublished
 		},
 		/**
-		 * The sharing icon class.
-		 * This figures out what icon to display.
-		 *
-		 * The anchor icon when the calendar is published
-		 * The sharing icon with high opacity when the calendar is shared
-		 * The sharing icon with low opacity when the calendar is neither shared nor published
-		 *
-		 * @returns {String}
-		 */
-		sharingIconClass() {
-			if (this.isPublished) {
-				return 'icon-public'
-			}
-
-			if (this.isShared) {
-				return 'icon-shared'
-			}
-
-			return 'icon-share'
-		},
-		/**
 		 * Whether or not the calendar is either shared or published
 		 * This is used to figure out whether or not to display the Shared label
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		isSharedOrPublished() {
 			return this.isShared || this.isPublished
@@ -252,7 +269,7 @@ export default {
 		/**
 		 * Is the calendar shared?
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		isShared() {
 			return !!this.calendar.shares.length
@@ -260,7 +277,7 @@ export default {
 		/**
 		 * Is the calendar shared with me?
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		isSharedWithMe() {
 			return this.calendar.isSharedWithMe
@@ -268,7 +285,7 @@ export default {
 		/**
 		 * Is the calendar published
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		isPublished() {
 			return !!this.calendar.publishURL
@@ -276,7 +293,7 @@ export default {
 		/**
 		 * TODO: this should use principals and principal.userId
 		 *
-		 * @returns {String}
+		 * @return {string}
 		 */
 		owner() {
 			if (this.calendar.owner.indexOf('principal:principals/users/') === '0') {
@@ -289,7 +306,7 @@ export default {
 		/**
 		 * Whether or not the information about the owner principal was loaded
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		loadedOwnerPrincipal() {
 			return this.$store.getters.getPrincipalByUrl(this.calendar.owner) !== undefined
@@ -333,7 +350,7 @@ export default {
 					this.countdown = 0
 				}
 			}, 1000)
-			this.deleteTimeout = setTimeout(async() => {
+			this.deleteTimeout = setTimeout(async () => {
 				try {
 					await this.$store.dispatch('deleteCalendar', { calendar: this.calendar })
 				} catch (error) {
@@ -488,3 +505,9 @@ export default {
 	},
 }
 </script>
+
+<style lang="scss" scoped>
+	.app-navigation-entry__counter-wrapper .action-item.sharing .material-design-icon.share {
+		opacity: .3;
+	}
+</style>

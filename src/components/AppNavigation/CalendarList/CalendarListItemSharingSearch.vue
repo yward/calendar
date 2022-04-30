@@ -24,8 +24,7 @@
 
 <template>
 	<li class="app-navigation-entry__multiselect">
-		<Multiselect
-			:options="usersOrGroups"
+		<Multiselect :options="usersOrGroups"
 			:searchable="true"
 			:internal-search="false"
 			:max-height="600"
@@ -35,7 +34,7 @@
 			:user-select="true"
 			open-direction="bottom"
 			track-by="user"
-			label="user"
+			label="displayName"
 			@search-change="findSharee"
 			@change="shareCalendar">
 			<span slot="noResult">{{ $t('calendar', 'No users or groups') }}</span>
@@ -45,10 +44,11 @@
 
 <script>
 import Multiselect from '@nextcloud/vue/dist/Components/Multiselect'
-import client from '../../../services/caldavService.js'
+import { principalPropertySearchByDisplaynameOrEmail } from '../../../services/caldavService.js'
 import HttpClient from '@nextcloud/axios'
 import debounce from 'debounce'
 import { generateOcsUrl } from '@nextcloud/router'
+import { urldecode } from '../../../utils/url'
 
 export default {
 	name: 'CalendarListItemSharingSearch',
@@ -72,16 +72,14 @@ export default {
 		/**
 		 * Share calendar
 		 *
-		 * @param {Object} data destructuring object
+		 * @param {object} data destructuring object
 		 * @param {string} data.user the userId
 		 * @param {string} data.displayName the displayName
 		 * @param {string} data.uri the sharing principalScheme uri
-		 * @param {Boolean} data.isGroup is this a group ?
-		 * @param {Boolean} data.isCircle is this a circle-group ?
+		 * @param {boolean} data.isGroup is this a group ?
+		 * @param {boolean} data.isCircle is this a circle-group ?
 		 */
 		shareCalendar({ user, displayName, uri, isGroup, isCircle }) {
-			uri = decodeURI(uri)
-			user = decodeURI(user)
 			this.$store.dispatch('shareCalendar', {
 				calendar: this.calendar,
 				user,
@@ -95,7 +93,7 @@ export default {
 		/**
 		 * Use the cdav client call to find matches to the query from the existing Users & Groups
 		 *
-		 * @param {String} query
+		 * @param {string} query
 		 */
 		findSharee: debounce(async function(query) {
 			const hiddenPrincipalSchemes = []
@@ -132,21 +130,31 @@ export default {
 		}, 500),
 		/**
 		 *
-		 * @param {String} query The search query
-		 * @param {String[]} hiddenPrincipals A list of principals to exclude from search results
-		 * @param {String[]} hiddenUrls A list of urls to exclude from search results
-		 * @returns {Promise<Object[]>}
+		 * @param {string} query The search query
+		 * @param {string[]} hiddenPrincipals A list of principals to exclude from search results
+		 * @param {string[]} hiddenUrls A list of urls to exclude from search results
+		 * @return {Promise<object[]>}
 		 */
 		async findShareesFromDav(query, hiddenPrincipals, hiddenUrls) {
 			let results
 			try {
-				results = await client.principalPropertySearchByDisplayname(query)
+				results = await principalPropertySearchByDisplaynameOrEmail(query)
 			} catch (error) {
 				return []
 			}
 
 			return results.reduce((list, result) => {
-				if (hiddenPrincipals.includes(decodeURI(result.principalScheme))) {
+				if (['ROOM', 'RESOURCE'].includes(result.calendarUserType)) {
+					return list
+				}
+
+				const isGroup = result.calendarUserType === 'GROUP'
+
+				// TODO: Why do we have to decode those two values?
+				const user = urldecode(result[isGroup ? 'groupId' : 'userId'])
+				const decodedPrincipalScheme = urldecode(result.principalScheme)
+
+				if (hiddenPrincipals.includes(decodedPrincipalScheme)) {
 					return list
 				}
 				if (hiddenUrls.includes(result.url)) {
@@ -158,12 +166,11 @@ export default {
 					return list
 				}
 
-				const isGroup = result.calendarUserType === 'GROUP'
 				list.push({
-					user: result[isGroup ? 'groupId' : 'userId'],
+					user,
 					displayName: result.displayname,
 					icon: isGroup ? 'icon-group' : 'icon-user',
-					uri: result.principalScheme,
+					uri: decodedPrincipalScheme,
 					isGroup,
 					isCircle: false,
 					isNoUser: isGroup,
@@ -174,15 +181,15 @@ export default {
 		},
 		/**
 		 *
-		 * @param {String} query The search query
-		 * @param {String[]} hiddenPrincipals A list of principals to exclude from search results
-		 * @param {String[]} hiddenUrls A list of urls to exclude from search results
-		 * @returns {Promise<Object[]>}
+		 * @param {string} query The search query
+		 * @param {string[]} hiddenPrincipals A list of principals to exclude from search results
+		 * @param {string[]} hiddenUrls A list of urls to exclude from search results
+		 * @return {Promise<object[]>}
 		 */
 		async findShareesFromCircles(query, hiddenPrincipals, hiddenUrls) {
 			let results
 			try {
-				results = await HttpClient.get(generateOcsUrl('apps/files_sharing/api/v1') + 'sharees', {
+				results = await HttpClient.get(generateOcsUrl('apps/files_sharing/api/v1/') + 'sharees', {
 					params: {
 						format: 'json',
 						search: query,

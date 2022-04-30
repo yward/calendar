@@ -2,10 +2,12 @@
  * @copyright Copyright (c) 2019 Georg Ehrke
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
+ *
  * @author John Molakvoæ <skjnldsv@protonmail.com>
+ *
  * @author Thomas Citharel <tcit@tcit.fr>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,12 +26,12 @@
 import Vue from 'vue'
 import { mapCalendarJsToCalendarObject } from '../models/calendarObject'
 import logger from '../utils/logger.js'
-import DateTimeValue from 'calendar-js/src/values/dateTimeValue'
 import {
 	createEvent,
 	getParserManager,
 	getTimezoneManager,
-} from 'calendar-js'
+	DateTimeValue,
+} from '@nextcloud/calendar-js'
 
 const state = {
 	calendarObjects: {},
@@ -41,9 +43,9 @@ const mutations = {
 	/**
 	 * Adds an array of calendar-objects to the store
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object[]} data.calendarObjects Calendar-objects to add
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object[]} data.calendarObjects Calendar-objects to add
 	 */
 	appendCalendarObjects(state, { calendarObjects = [] }) {
 		for (const calendarObject of calendarObjects) {
@@ -56,9 +58,9 @@ const mutations = {
 	/**
 	 * Adds one calendar-object to the store
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object} data.calendarObject Calendar-object to add
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object} data.calendarObject Calendar-object to add
 	 */
 	appendCalendarObject(state, { calendarObject }) {
 		if (!state.calendarObjects[calendarObject.id]) {
@@ -69,9 +71,9 @@ const mutations = {
 	/**
 	 * Updates a calendar-object id
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object} data.calendarObject Calendar-object to update
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object} data.calendarObject Calendar-object to update
 	 */
 	updateCalendarObjectId(state, { calendarObject }) {
 		if (calendarObject.dav === null) {
@@ -84,9 +86,9 @@ const mutations = {
 	/**
 	 * Resets a calendar-object to it's original server state
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object} data.calendarObject Calendar-object to reset
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object} data.calendarObject Calendar-object to reset
 	 */
 	resetCalendarObjectToDav(state, { calendarObject }) {
 		calendarObject = state.calendarObjects[calendarObject.id]
@@ -110,9 +112,9 @@ const mutations = {
 	/**
 	 * Removes a calendar-object from the store
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object} data.calendarObject Calendar-object to delete
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object} data.calendarObject Calendar-object to delete
 	 */
 	deleteCalendarObject(state, { calendarObject }) {
 		Vue.delete(state.calendarObjects, calendarObject.id)
@@ -121,7 +123,7 @@ const mutations = {
 	/**
 	 * Increments the modification count
 	 *
-	 * @param {Object} state The store data
+	 * @param {object} state The store data
 	 */
 	incrementModificationCount(state) {
 		state.modificationCount++
@@ -133,8 +135,8 @@ const getters = {
 	/**
 	 * Gets a calendar-object based on its id
 	 *
-	 * @param {Object} state The store data
-	 * @returns {function({String}): CalendarObject}
+	 * @param {object} state The store data
+	 * @return {function({String}): CalendarObject}
 	 */
 	getCalendarObjectById: (state) => (id) => state.calendarObjects[id],
 }
@@ -144,11 +146,11 @@ const actions = {
 	/**
 	 * Moves a calendar-object to a different calendar
 	 *
-	 * @param {Object} context the store mutations
-	 * @param {Object} data destructuring object
+	 * @param {object} context the store mutations
+	 * @param {object} data destructuring object
 	 * @param {CalendarObject} data.calendarObject Calendar-object to delete
-	 * @param {String} data.newCalendarId Calendar-Id of calendar to move this calendar-object to
-	 * @returns {Promise<void>}
+	 * @param {string} data.newCalendarId Calendar-Id of calendar to move this calendar-object to
+	 * @return {Promise<void>}
 	 */
 	async moveCalendarObject(context, { calendarObject, newCalendarId }) {
 		if (!calendarObject.existsOnServer) {
@@ -203,10 +205,10 @@ const actions = {
 	/**
 	 * Updates a calendar-object
 	 *
-	 * @param {Object} context the store mutations
-	 * @param {Object} data destructuring object
+	 * @param {object} context the store mutations
+	 * @param {object} data destructuring object
 	 * @param {CalendarObject} data.calendarObject Calendar-object to delete
-	 * @returns {Promise<void>}
+	 * @return {Promise<void>}
 	 */
 	async updateCalendarObject(context, { calendarObject }) {
 		if (calendarObject.existsOnServer) {
@@ -240,17 +242,18 @@ const actions = {
 			calendarId: calendarObject.calendarId,
 			calendarObjectId: calendarObject.id,
 		})
+		context.commit('resetCalendarObjectToDav', { calendarObject })
 		context.commit('incrementModificationCount')
 	},
 
 	/**
 	 * Creates a new calendar-object from an recurrence-exception fork
 	 *
-	 * @param {Object} context The Vuex context
-	 * @param {Object} data destructuring object
+	 * @param {object} context The Vuex context
+	 * @param {object} data destructuring object
 	 * @param {EventComponent} data.eventComponent EventComponent to store
-	 * @param {String} data.calendarId The calendar-id to store it in
-	 * @returns {Promise<void>}
+	 * @param {string} data.calendarId The calendar-id to store it in
+	 * @return {Promise<void>}
 	 */
 	async createCalendarObjectFromFork(context, { eventComponent, calendarId }) {
 		const calendar = context.getters.getCalendarById(calendarId)
@@ -276,10 +279,10 @@ const actions = {
 	/**
 	 * Deletes a calendar-object
 	 *
-	 * @param {Object} context the store mutations
-	 * @param {Object} data destructuring object
+	 * @param {object} context the store mutations
+	 * @param {object} data destructuring object
 	 * @param {CalendarObject} data.calendarObject Calendar-object to delete
-	 * @returns {Promise<void>}
+	 * @return {Promise<void>}
 	 */
 	async deleteCalendarObject(context, { calendarObject }) {
 		// If this calendar-object was not created on the server yet,
@@ -304,13 +307,13 @@ const actions = {
 	/**
 	 * Creates a new calendar object based on start, end, timezone and isAllDay
 	 *
-	 * @param {Object} context the store mutations
-	 * @param {Object} data destructuring object
-	 * @param {Number} data.start Timestamp for start of new event
-	 * @param {Number} data.end Timestamp for end of new event
-	 * @param {String} data.timezoneId asd
-	 * @param {Boolean} data.isAllDay foo
-	 * @returns {Promise<CalendarObject>}
+	 * @param {object} context the store mutations
+	 * @param {object} data destructuring object
+	 * @param {number} data.start Timestamp for start of new event
+	 * @param {number} data.end Timestamp for end of new event
+	 * @param {string} data.timezoneId asd
+	 * @param {boolean} data.isAllDay foo
+	 * @return {Promise<CalendarObject>}
 	 */
 	createNewEvent(context, { start, end, timezoneId, isAllDay }) {
 		const timezoneManager = getTimezoneManager()
@@ -343,15 +346,15 @@ const actions = {
 	/**
 	 * Updates the time of the new calendar object
 	 *
-	 * @param {Object} data The destructuring object for Vuex
+	 * @param {object} data The destructuring object for Vuex
 	 * @param {Function} data.commit The Vuex commit function
 	 * @param {Function} data.dispatch The Vuex dispatch function
-	 * @param {Object} data2 destructuring object
+	 * @param {object} data2 destructuring object
 	 * @param {CalendarObject} data2.calendarObjectInstance Calendar-object to
-	 * @param {Number} data2.start Timestamp for start of new event
-	 * @param {Number} data2.end Timestamp for end of new event
-	 * @param {String} data2.timezoneId asd
-	 * @param {Boolean} data2.isAllDay foo
+	 * @param {number} data2.start Timestamp for start of new event
+	 * @param {number} data2.end Timestamp for end of new event
+	 * @param {string} data2.timezoneId asd
+	 * @param {boolean} data2.isAllDay foo
 	 */
 	updateTimeOfNewEvent({ commit, dispatch }, { calendarObjectInstance, start, end, timezoneId, isAllDay }) {
 		const isDirty = calendarObjectInstance.eventComponent.isDirty()

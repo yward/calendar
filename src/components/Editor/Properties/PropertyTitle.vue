@@ -22,13 +22,12 @@
 
 <template>
 	<div class="property-title">
-		<div
-			class="property-title__input"
+		<div class="property-title__input"
 			:class="{ 'property-title__input--readonly': isReadOnly }">
-			<input
-				v-if="!isReadOnly"
+			<input v-if="!isReadOnly"
+				v-focus
 				type="text"
-				:placeholder="$t('calendar', 'Event title')"
+				:placeholder="t('calendar', 'Event title')"
 				:value="value"
 				@input.prevent.stop="changeValue">
 			<!-- eslint-disable-next-line vue/singleline-html-element-content-newline -->
@@ -38,8 +37,13 @@
 </template>
 
 <script>
+import focus from '../../../directives/focus.js'
+
 export default {
 	name: 'PropertyTitle',
+	directives: {
+		focus,
+	},
 	props: {
 		isReadOnly: {
 			type: Boolean,

@@ -21,54 +21,36 @@
   -->
 
 <template>
-	<button
-		v-shortkey="['c']"
+	<button v-shortkey="['c']"
 		class="button primary new-event"
 		@click="newEvent"
 		@shortkey="newEvent">
-		{{ $t('calendar', '+ New event') }}
+		<Plus :size="20" />
+		{{ $t('calendar', 'New event') }}
 	</button>
 </template>
 
 <script>
-import { dateFactory } from '../../../utils/date'
-
+import Plus from 'vue-material-design-icons/Plus.vue'
 export default {
 	name: 'AppNavigationHeaderNewEvent',
+	components: {
+		Plus,
+	},
 	methods: {
+		/**
+		 * Opens the new event dialog
+		 */
 		newEvent() {
-			let name = this.$store.state.settings.skipPopover
-				? 'NewSidebarView'
-				: 'NewPopoverView'
-
-			if (window.innerWidth <= 768 && name === 'NewPopoverView') {
-				name = 'NewSidebarView'
-			}
-
-			const start = dateFactory()
-			// Setting a value greater than 23 is actually supported with the expected behavior:
-			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours
-			start.setHours(start.getHours() + Math.ceil(start.getMinutes() / 60))
-			start.setMinutes(0)
-			const end = new Date(start.getTime())
-			end.setHours(start.getHours() + 1)
-
-			const params = Object.assign({}, this.$store.state.route.params, {
-				allDay: '0',
-				dtstart: String(Math.floor(start.getTime() / 1000)),
-				dtend: String(Math.floor(end.getTime() / 1000)),
-			})
-
-			// Don't push new route when day didn't change
-			if (name === this.$store.state.route.name
-				&& params.allDay === this.$store.state.route.params.allDay
-				&& params.dtstart === this.$store.state.route.params.dtstart
-				&& params.dtend === this.$store.state.route.params.dtend) {
-				return
-			}
-
-			this.$router.push({ name, params })
+			this.$router.push('/new')
 		},
 	},
 }
 </script>
+
+<style scoped>
+.button.primary.new-event {
+	display: flex;
+	align-items: center;
+}
+</style>

@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -36,8 +36,8 @@ export default function(router, store) {
 	 * Updates the title of the window
 	 *
 	 * @param {Date} date viewed Date
-	 * @param {String} view Name of the current view
-	 * @param {String} locale Locale to be used for formatting
+	 * @param {string} view Name of the current view
+	 * @param {string} locale Locale to be used for formatting
 	 */
 	function updateTitle(date, view, locale) {
 		const title = dateRangeFormat(date, view, locale)
@@ -74,10 +74,13 @@ export default function(router, store) {
 		if (mutation.type !== 'setMomentLocale') {
 			return
 		}
+		if (!router.currentRoute.params?.firstDay) {
+			return
+		}
 
 		const date = getDateFromFirstdayParam(router.currentRoute.params.firstDay)
 		const view = router.currentRoute.params.view
-		const locale = mutation.payload
+		const { locale } = mutation.payload
 
 		updateTitle(date, view, locale)
 	})

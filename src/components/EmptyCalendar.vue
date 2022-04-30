@@ -21,23 +21,26 @@
   -->
 
 <template>
-	<div class="empty-calendar-screen">
-		<div class="empty-calendar-screen__icon">
-			<div class="icon icon-calendar-dark" />
-		</div>
-		<div class="empty-calendar-screen__message">
-			<h2>
-				{{ $t('calendar', 'Public calendar does not exist') }}
-			</h2>
-			<p>
-				{{ $t('calendar', 'Maybe the share was deleted or has expired?' ) }}
-			</p>
-		</div>
-	</div>
+	<EmptyContent>
+		{{ $t('calendar', 'Public calendar does not exist') }}
+		<template #icon>
+			<CalendarBlank :size="20" decorative />
+		</template>
+		<template #desc>
+			{{ $t('calendar', 'Maybe the share was deleted or has expired?' ) }}
+		</template>
+	</EmptyContent>
 </template>
 
 <script>
+import EmptyContent from '@nextcloud/vue/dist/Components/EmptyContent'
+import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
+
 export default {
 	name: 'EmptyCalendar',
+	components: {
+		EmptyContent,
+		CalendarBlank,
+	},
 }
 </script>

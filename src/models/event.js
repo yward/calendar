@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,7 @@
  */
 
 import { getDateFromDateTimeValue } from '../utils/date.js'
-import DurationValue from 'calendar-js/src/values/durationValue.js'
+import { DurationValue } from '@nextcloud/calendar-js'
 import { getHexForColorName } from '../utils/color.js'
 import { mapAlarmComponentToAlarmObject } from './alarm.js'
 import { mapAttendeePropertyToAttendeeObject } from './attendee.js'
@@ -33,8 +33,8 @@ import {
 /**
  * Creates a complete calendar-object-instance-object based on given props
  *
- * @param {Object} props The props already provided
- * @returns {Object}
+ * @param {object} props The props already provided
+ * @return {object}
  */
 const getDefaultEventObject = (props = {}) => Object.assign({}, {
 	// The real event-component coming from calendar-js
@@ -90,7 +90,7 @@ const getDefaultEventObject = (props = {}) => Object.assign({}, {
 /**
  *
  * @param {EventComponent} eventComponent The calendar-js eventComponent
- * @returns {Object}
+ * @return {object}
  */
 const mapEventComponentToEventObject = (eventComponent) => {
 	const eventObject = getDefaultEventObject({

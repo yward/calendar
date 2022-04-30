@@ -1,9 +1,9 @@
 /**
- * @copyright Copyright (c) 2019 Georg Ehrke
+ * @copyright Copyright (c) 2020 Georg Ehrke
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,26 +19,33 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-import HttpClient from '@nextcloud/axios'
-import client from '../services/caldavService.js'
-import { getLinkToConfig } from '../utils/settings.js'
+import { enableBirthdayCalendar } from '../services/caldavService.js'
 import { mapDavCollectionToCalendar } from '../models/calendar'
-import detectTimezone from '../services/timezoneDetectionService'
-import { setConfig } from 'calendar-js'
+import { detectTimezone } from '../services/timezoneDetectionService'
+import { setConfig as setCalendarJsConfig } from '@nextcloud/calendar-js'
+import { setConfig } from '../services/settings.js'
+import { logInfo } from '../utils/logger.js'
+import getTimezoneManager from '../services/timezoneDataProviderService'
 
 const state = {
+	// env
 	appVersion: null,
-	eventLimit: null,
 	firstRun: null,
-	momentLocale: 'en',
+	talkEnabled: false,
+	// user-defined calendar settings
+	eventLimit: null,
 	showTasks: null,
 	showWeekends: null,
 	showWeekNumbers: null,
 	skipPopover: null,
 	slotDuration: null,
-	talkEnabled: false,
+	defaultReminder: null,
 	tasksEnabled: false,
-	timezone: null,
+	timezone: 'automatic',
+	hideEventExport: false,
+	forceEventAlarmType: false,
+	// user-defined Nextcloud settings
+	momentLocale: 'en',
 }
 
 const mutations = {
@@ -46,7 +53,7 @@ const mutations = {
 	/**
 	 * Updates the user's setting for event limit
 	 *
-	 * @param {Object} state The Vuex state
+	 * @param {object} state The Vuex state
 	 */
 	toggleEventLimitEnabled(state) {
 		state.eventLimit = !state.eventLimit
@@ -55,7 +62,7 @@ const mutations = {
 	/**
 	 * Updates the user's setting for visibility of event popover
 	 *
-	 * @param {Object} state The Vuex state
+	 * @param {object} state The Vuex state
 	 */
 	togglePopoverEnabled(state) {
 		state.skipPopover = !state.skipPopover
@@ -64,7 +71,7 @@ const mutations = {
 	/**
 	 * Updates the user's setting for visibility of weekends
 	 *
-	 * @param {Object} state The Vuex state
+	 * @param {object} state The Vuex state
 	 */
 	toggleTasksEnabled(state) {
 		state.showTasks = !state.showTasks
@@ -73,7 +80,7 @@ const mutations = {
 	/**
 	 * Updates the user's setting for visibility of weekends
 	 *
-	 * @param {Object} state The Vuex state
+	 * @param {object} state The Vuex state
 	 */
 	toggleWeekendsEnabled(state) {
 		state.showWeekends = !state.showWeekends
@@ -82,7 +89,7 @@ const mutations = {
 	/**
 	 * Updates the user's setting for visibility of week numbers
 	 *
-	 * @param {Object} state The Vuex state
+	 * @param {object} state The Vuex state
 	 */
 	toggleWeekNumberEnabled(state) {
 		state.showWeekNumbers = !state.showWeekNumbers
@@ -91,20 +98,31 @@ const mutations = {
 	/**
 	 * Updates the user's preferred slotDuration
 	 *
-	 * @param {Object} state The Vuex state
-	 * @param {Object} data The destructuring object
-	 * @param {String} data.slotDuration The new slot duration
+	 * @param {object} state The Vuex state
+	 * @param {object} data The destructuring object
+	 * @param {string} data.slotDuration The new slot duration
 	 */
 	setSlotDuration(state, { slotDuration }) {
 		state.slotDuration = slotDuration
 	},
 
 	/**
+	 * Updates the user's preferred defaultReminder
+	 *
+	 * @param {object} state The Vuex state
+	 * @param {object} data The destructuring object
+	 * @param {string} data.defaultReminder The new default reminder length
+	 */
+	 setDefaultReminder(state, { defaultReminder }) {
+		state.defaultReminder = defaultReminder
+	},
+
+	/**
 	 * Updates the user's timezone
 	 *
-	 * @param {Object} state The Vuex state
-	 * @param {Object} data The destructuring object
-	 * @param {String} data.timezoneId The new timezone
+	 * @param {object} state The Vuex state
+	 * @param {object} data The destructuring object
+	 * @param {string} data.timezoneId The new timezone
 	 */
 	setTimezone(state, { timezoneId }) {
 		state.timezone = timezoneId
@@ -113,32 +131,68 @@ const mutations = {
 	/**
 	 * Initialize settings
 	 *
-	 * @param {Object} state The Vuex state
-	 * @param {Object} settings The full settings object
+	 * @param {object} state The Vuex state
+	 * @param {object} data The destructuring object
+	 * @param {string} data.appVersion The version of the Nextcloud app
+	 * @param {boolean} data.eventLimit Whether or not to limit number of visible events in grid view
+	 * @param {boolean} data.firstRun Whether or not this is the first run
+	 * @param {boolean} data.showWeekNumbers Whether or not to show week numbers
+	 * @param {boolean} data.showTasks Whether or not to display tasks with a due-date
+	 * @param {boolean} data.showWeekends Whether or not to display weekends
+	 * @param {boolean} data.skipPopover Whether or not to skip the simple event popover
+	 * @param {string} data.slotDuration The duration of one slot in the agendaView
+	 * @param {string} data.defaultReminder The default reminder to set on newly created events
+	 * @param {boolean} data.talkEnabled Whether or not the talk app is enabled
+	 * @param {boolean} data.tasksEnabled Whether ot not the tasks app is enabled
+	 * @param {string} data.timezone The timezone to view the calendar in. Either an Olsen timezone or "automatic"
+	 * @param {boolean} data.hideEventExport
+	 * @param {string} data.forceEventAlarmType
 	 */
-	loadSettingsFromServer(state, settings) {
-		console.debug('Initial settings:', settings)
+	loadSettingsFromServer(state, { appVersion, eventLimit, firstRun, showWeekNumbers, showTasks, showWeekends, skipPopover, slotDuration, defaultReminder, talkEnabled, tasksEnabled, timezone, hideEventExport, forceEventAlarmType }) {
+		logInfo(`
+Initial settings:
+	- AppVersion: ${appVersion}
+	- EventLimit: ${eventLimit}
+	- FirstRun: ${firstRun}
+	- ShowWeekNumbers: ${showWeekNumbers}
+	- ShowTasks: ${showTasks}
+	- ShowWeekends: ${showWeekends}
+	- SkipPopover: ${skipPopover}
+	- SlotDuration: ${slotDuration}
+	- DefaultReminder: ${defaultReminder}
+	- TalkEnabled: ${talkEnabled}
+	- TasksEnabled: ${tasksEnabled}
+	- Timezone: ${timezone}
+	- HideEventExport: ${hideEventExport}
+	- ForceEventAlarmType: ${forceEventAlarmType}
+`)
 
-		state.appVersion = settings.appVersion
-		state.eventLimit = settings.eventLimit
-		state.firstRun = settings.firstRun
-		state.showWeekNumbers = settings.showWeekNumbers
-		state.showTasks = settings.showTasks
-		state.showWeekends = settings.showWeekends
-		state.skipPopover = settings.skipPopover
-		state.slotDuration = settings.slotDuration
-		state.talkEnabled = settings.talkEnabled
-		state.tasksEnabled = settings.tasksEnabled
-		state.timezone = settings.timezone
+		state.appVersion = appVersion
+		state.eventLimit = eventLimit
+		state.firstRun = firstRun
+		state.showWeekNumbers = showWeekNumbers
+		state.showTasks = showTasks
+		state.showWeekends = showWeekends
+		state.skipPopover = skipPopover
+		state.slotDuration = slotDuration
+		state.defaultReminder = defaultReminder
+		state.talkEnabled = talkEnabled
+		state.tasksEnabled = tasksEnabled
+		state.timezone = timezone
+		state.hideEventExport = hideEventExport
+		state.forceEventAlarmType = forceEventAlarmType
 	},
 
 	/**
 	 * Sets the name of the moment.js locale to be used
 	 *
-	 * @param {Object} state The Vuex state
-	 * @param {String} locale The moment.js locale to be used
+	 * @param {object} state The Vuex state
+	 * @param {object} data The destructuring object
+	 * @param {string} data.locale The moment.js locale to be used
 	 */
-	setMomentLocale(state, locale) {
+	setMomentLocale(state, { locale }) {
+		logInfo(`Updated moment locale: ${locale}`)
+
 		state.momentLocale = locale
 	},
 }
@@ -146,27 +200,33 @@ const mutations = {
 const getters = {
 
 	/**
-	 * Whether or not a birthday calendar exists
-	 *
-	 * @param {Object} state The Vuex state
-	 * @param {Object} getters the vuex getters
-	 * @returns {boolean}
-	 */
-	hasBirthdayCalendar: (state, getters) => {
-		return !!getters.getBirthdayCalendar
-	},
-
-	/**
 	 * Gets the resolved timezone.
 	 * If the timezone is set to automatic, it returns the user's current timezone
 	 * Otherwise, it returns the Olsen timezone stored
 	 *
-	 * @param {Object} state The Vuex state
-	 * @returns {String}
+	 * @param {object} state The Vuex state
+	 * @return {string}
 	 */
 	getResolvedTimezone: (state) => state.timezone === 'automatic'
 		? detectTimezone()
 		: state.timezone,
+
+	/**
+	 * Gets the resolved timezone object.
+	 * Falls back to UTC if timezone is invalid.
+	 *
+	 * @param {object} state The Vuex state
+	 * @param {object} getters The vuex getters
+	 * @return {object} The calendar-js timezone object
+	 */
+	getResolvedTimezoneObject: (state, getters) => {
+		const timezone = getters.getResolvedTimezone
+		let timezoneObject = getTimezoneManager().getTimezoneForId(timezone)
+		if (!timezoneObject) {
+			timezoneObject = getTimezoneManager().getTimezoneForId('UTC')
+		}
+		return timezoneObject
+	},
 }
 
 const actions = {
@@ -174,154 +234,182 @@ const actions = {
 	/**
 	 * Updates the user's setting for visibility of birthday calendar
 	 *
-	 * @param {Object} context The Vuex context
-	 * @returns {Promise<void>}
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.getters The Vuex Getters
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @param {Function} vuex.dispatch The Vuex dispatch Function
+	 * @return {Promise<void>}
 	 */
-	async toggleBirthdayCalendarEnabled(context) {
-		if (context.getters.hasBirthdayCalendar) {
-			const calendar = context.getters.getBirthdayCalendar
-			return context.dispatch('deleteCalendar', { calendar })
+	async toggleBirthdayCalendarEnabled({ getters, commit, dispatch }) {
+		if (getters.hasBirthdayCalendar) {
+			const calendar = getters.getBirthdayCalendar
+			await dispatch('deleteCalendar', { calendar })
 		} else {
-			await client.calendarHomes[0].enableBirthdayCalendar()
-			const davCalendar = await client.calendarHomes[0].find('contact_birthdays')
+			const davCalendar = await enableBirthdayCalendar()
 			const calendar = mapDavCollectionToCalendar(davCalendar)
-			context.commit('addCalendar', { calendar })
+			commit('addCalendar', { calendar })
 		}
 	},
 
 	/**
 	 * Updates the user's setting for event limit
 	 *
-	 * @param {Object} context The Vuex context
-	 * @returns {Promise<void>}
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @return {Promise<void>}
 	 */
-	async toggleEventLimitEnabled(context) {
-		const newState = !context.state.eventLimit
+	async toggleEventLimitEnabled({ state, commit }) {
+		const newState = !state.eventLimit
 		const value = newState ? 'yes' : 'no'
 
-		await HttpClient.post(getLinkToConfig('eventLimit'), { value })
-		context.commit('toggleEventLimitEnabled')
+		await setConfig('eventLimit', value)
+		commit('toggleEventLimitEnabled')
 	},
 
 	/**
 	 * Updates the user's setting for visibility of event popover
 	 *
-	 * @param {Object} context The Vuex context
-	 * @returns {Promise<void>}
+	 * @param {object} context The Vuex context
+	 * @param {object} context.state The store state
+	 * @param {object} context.commit The store mutations
+	 * @return {Promise<void>}
 	 */
-	async togglePopoverEnabled(context) {
-		const newState = !context.state.skipPopover
+	async togglePopoverEnabled({ state, commit }) {
+		const newState = !state.skipPopover
 		const value = newState ? 'yes' : 'no'
 
-		await HttpClient.post(getLinkToConfig('skipPopover'), { value })
-		context.commit('togglePopoverEnabled')
+		await setConfig('skipPopover', value)
+		commit('togglePopoverEnabled')
 	},
 
 	/**
 	 * Updates the user's setting for visibility of weekends
 	 *
-	 * @param {Object} context The Vuex context
-	 * @returns {Promise<void>}
+	 * @param {object} context The Vuex context
+	 * @param {object} context.state The store state
+	 * @param {object} context.commit The store mutations
+	 * @return {Promise<void>}
 	 */
-	async toggleWeekendsEnabled(context) {
-		const newState = !context.state.showWeekends
+	async toggleWeekendsEnabled({ state, commit }) {
+		const newState = !state.showWeekends
 		const value = newState ? 'yes' : 'no'
 
-		await HttpClient.post(getLinkToConfig('showWeekends'), { value })
-		context.commit('toggleWeekendsEnabled')
+		await setConfig('showWeekends', value)
+		commit('toggleWeekendsEnabled')
 	},
 
 	/**
 	 * Updates the user's setting for visibility of tasks
 	 *
-	 * @param {Object} context The Vuex context
-	 * @returns {Promise<void>}
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @return {Promise<void>}
 	 */
-	async toggleTasksEnabled(context) {
-		const newState = !context.state.showTasks
+	async toggleTasksEnabled({ state, commit }) {
+		const newState = !state.showTasks
 		const value = newState ? 'yes' : 'no'
 
-		await HttpClient.post(getLinkToConfig('showTasks'), { value })
-		context.commit('toggleTasksEnabled')
-		context.commit('clearFetchedTimeRanges')
-		context.commit('incrementModificationCount')
+		await setConfig('showTasks', value)
+		commit('toggleTasksEnabled')
+		commit('clearFetchedTimeRanges')
+		commit('incrementModificationCount')
 	},
 
 	/**
 	 * Updates the user's setting for visibility of week numbers
 	 *
-	 * @param {Object} context The Vuex context
-	 * @returns {Promise<void>}
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @return {Promise<void>}
 	 */
-	async toggleWeekNumberEnabled(context) {
-		const newState = !context.state.showWeekNumbers
+	async toggleWeekNumberEnabled({ state, commit }) {
+		const newState = !state.showWeekNumbers
 		const value = newState ? 'yes' : 'no'
 
-		await HttpClient.post(getLinkToConfig('showWeekNr'), { value })
-		context.commit('toggleWeekNumberEnabled')
+		await setConfig('showWeekNr', value)
+		commit('toggleWeekNumberEnabled')
 	},
 
 	/**
 	 * Updates the view to be used as initial view when opening
 	 * the calendar app again
 	 *
-	 * @param {Object} context The Vuex context
-	 * @param {Object} data The destructuring object
-	 * @param {String} data.initialView New view to be used as initial view
-	 * @returns {Promise<void>}
+	 * @param {object} context The Vuex destructuring object
+	 * @param {object} data The destructuring object
+	 * @param {string} data.initialView New view to be used as initial view
+	 * @return {Promise<void>}
 	 */
 	async setInitialView(context, { initialView }) {
-		await HttpClient.post(getLinkToConfig('view'), {
-			value: initialView,
-		})
+		await setConfig('view', initialView)
 	},
 
 	/**
 	 * Updates the user's preferred slotDuration
 	 *
-	 * @param {Object} context The Vuex context
-	 * @param {Object} data The destructuring object
-	 * @param {String} data.slotDuration The new slot duration
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @param {object} data The destructuring object
+	 * @param {string} data.slotDuration The new slot duration
 	 */
-	async setSlotDuration(context, { slotDuration }) {
-		if (context.state.slotDuration === slotDuration) {
+	async setSlotDuration({ state, commit }, { slotDuration }) {
+		if (state.slotDuration === slotDuration) {
 			return
 		}
 
-		await HttpClient.post(getLinkToConfig('slotDuration'), {
-			value: slotDuration,
-		})
-		context.commit('setSlotDuration', { slotDuration })
+		await setConfig('slotDuration', slotDuration)
+		commit('setSlotDuration', { slotDuration })
+	},
+
+	/**
+	 * Updates the user's preferred defaultReminder
+	 *
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @param {object} data The destructuring object
+	 * @param {string} data.defaultReminder The new default reminder
+	 */
+	async setDefaultReminder({ state, commit }, { defaultReminder }) {
+		if (state.defaultReminder === defaultReminder) {
+			return
+		}
+
+		await setConfig('defaultReminder', defaultReminder)
+		commit('setDefaultReminder', { defaultReminder })
 	},
 
 	/**
 	 * Updates the user's timezone
 	 *
-	 * @param {Object} context The Vuex context
-	 * @param {Object} data The destructuring object
-	 * @param {String} data.timezoneId The new timezone
-	 * @returns {Promise<void>}
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
+	 * @param {Function} vuex.commit The Vuex commit Function
+	 * @param {object} data The destructuring object
+	 * @param {string} data.timezoneId The new timezone
+	 * @return {Promise<void>}
 	 */
-	async setTimezone(context, { timezoneId }) {
-		if (context.state.timezone === timezoneId) {
+	async setTimezone({ state, commit }, { timezoneId }) {
+		if (state.timezone === timezoneId) {
 			return
 		}
 
-		await HttpClient.post(getLinkToConfig('timezone'), {
-			value: timezoneId,
-		})
-		context.commit('setTimezone', { timezoneId })
+		await setConfig('timezone', timezoneId)
+		commit('setTimezone', { timezoneId })
 	},
 
 	/**
 	 * Initializes the calendar-js configuration
 	 *
-	 * @param {Object} vuex The Vuex destructuring object
-	 * @param {Object} vuex.state The Vuex state
+	 * @param {object} vuex The Vuex destructuring object
+	 * @param {object} vuex.state The Vuex state
 	 */
 	initializeCalendarJsConfig({ state }) {
-		setConfig('PRODID', `-//IDN nextcloud.com//Calendar app ${state.appVersion}//EN`)
-		setConfig('property-list-significant-change', [
+		setCalendarJsConfig('PRODID', `-//IDN nextcloud.com//Calendar app ${state.appVersion}//EN`)
+		setCalendarJsConfig('property-list-significant-change', [
 			'SUMMARY',
 			'LOCATION',
 			'DESCRIPTION',

@@ -22,31 +22,26 @@
 
 <template>
 	<div>
-		<button
-			v-if="showMoreButton"
+		<button v-if="showMoreButton"
 			@click="showMore">
 			{{ $t('calendar', 'More') }}
 		</button>
-		<button
-			v-if="showSaveButton"
+		<button v-if="showSaveButton"
 			class="primary"
 			@click="saveThisOnly">
 			{{ $t('calendar', 'Save') }}
 		</button>
-		<button
-			v-if="shoUpdateButton"
+		<button v-if="showUpdateButton"
 			class="primary"
 			@click="saveThisOnly">
 			{{ $t('calendar', 'Update') }}
 		</button>
-		<button
-			v-if="showUpdateOnlyThisButton"
+		<button v-if="showUpdateOnlyThisButton"
 			class="primary"
 			@click="saveThisOnly">
 			{{ $t('calendar', 'Update this occurrence') }}
 		</button>
-		<button
-			v-if="showUpdateThisAndFutureButton"
+		<button v-if="showUpdateThisAndFutureButton"
 			:class="{ primary: forceThisAndAllFuture}"
 			@click="saveThisAndAllFuture">
 			{{ $t('calendar', 'Update this and all future') }}
@@ -79,7 +74,7 @@ export default {
 		showSaveButton() {
 			return this.isNew && !this.canCreateRecurrenceException
 		},
-		shoUpdateButton() {
+		showUpdateButton() {
 			return !this.isNew && !this.canCreateRecurrenceException
 		},
 		showUpdateOnlyThisButton() {
@@ -91,13 +86,13 @@ export default {
 	},
 	methods: {
 		saveThisOnly() {
-			this.$emit('saveThisOnly')
+			this.$emit('save-this-only')
 		},
 		saveThisAndAllFuture() {
-			this.$emit('saveThisAndAllFuture')
+			this.$emit('save-this-and-all-future')
 		},
 		showMore() {
-			this.$emit('showMore')
+			this.$emit('show-more')
 		},
 	},
 }

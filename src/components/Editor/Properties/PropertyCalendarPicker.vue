@@ -22,18 +22,15 @@
 
 <template>
 	<div v-if="display" class="property-select">
-		<div
-			class="property-select__input"
+		<div class="property-select__input"
 			:class="{ 'property-select__input--readonly-calendar-picker': isReadOnly }">
-			<CalendarPicker
-				v-if="!isReadOnly"
-				:calendar="calendar"
+			<CalendarPicker v-if="!isReadOnly"
+				:value="calendar"
 				:calendars="calendars"
 				:show-calendar-on-select="true"
-				@selectCalendar="selectCalendar" />
+				@select-calendar="selectCalendar" />
 
-			<CalendarPickerOption
-				v-else
+			<CalendarPickerOption v-else
 				:color="calendar.color"
 				:display-name="calendar.displayName"
 				:is-shared-with-me="calendar.isSharedWithMe"
@@ -76,10 +73,11 @@ export default {
 		 * Emits the select calendar event
 		 *
 		 * // TODO: this should emit the calendar id instead
-		 * @param {Object} value The calendar Object
+		 *
+		 * @param {object} value The calendar Object
 		 */
 		selectCalendar(value) {
-			this.$emit('selectCalendar', value)
+			this.$emit('select-calendar', value)
 		},
 	},
 }

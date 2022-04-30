@@ -23,19 +23,45 @@ declare(strict_types=1);
  */
 namespace OCA\Calendar\AppInfo;
 
+use OCA\Calendar\Dashboard\CalendarWidget;
+use OCA\Calendar\Listener\UserDeletedListener;
+use OCA\Calendar\Profile\AppointmentsAction;
 use OCP\AppFramework\App;
+use OCP\AppFramework\Bootstrap\IBootContext;
+use OCP\AppFramework\Bootstrap\IBootstrap;
+use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\User\Events\UserDeletedEvent;
+use function method_exists;
 
-/**
- * Class Application
- *
- * @package OCA\Calendar\AppInfo
- */
-class Application extends App {
+class Application extends App implements IBootstrap {
+
+	/** @var string */
+	public const APP_ID = 'calendar';
 
 	/**
 	 * @param array $params
 	 */
-	public function __construct(array $params=[]) {
-		parent::__construct('calendar', $params);
+	public function __construct(array $params = []) {
+		parent::__construct(self::APP_ID, $params);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function register(IRegistrationContext $context): void {
+		$context->registerDashboardWidget(CalendarWidget::class);
+
+		// TODO: drop conditional code when the app is 23+
+		if (method_exists($context, 'registerProfileLinkAction')) {
+			$context->registerProfileLinkAction(AppointmentsAction::class);
+		}
+
+		$context->registerEventListener(UserDeletedEvent::class, UserDeletedListener::class);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function boot(IBootContext $context): void {
 	}
 }

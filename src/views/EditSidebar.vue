@@ -4,6 +4,7 @@
   -
   - @author Georg Ehrke <oc.list@georgehrke.com>
   - @author Jakob Röhrl <jakob.roehrl@web.de>
+  - @author Richard Steinmetz <richard@steinmetz.cloud>
   -
   - @license GNU AGPL version 3 or any later version
   -
@@ -23,25 +24,74 @@
   -->
 
 <template>
-	<AppSidebar
-		v-show="isVisible"
-		:title="title"
+	<AppSidebar :title="title"
 		:title-editable="!isReadOnly && !isLoading"
 		:title-placeholder="$t('calendar', 'Event title')"
 		:subtitle="subTitle"
+		:empty="isLoading || isError"
+		:force-menu="true"
 		@close="cancel"
 		@update:title="updateTitle">
-		<template v-slot:primary-actions>
-			<PropertyCalendarPicker
-				v-if="showCalendarPicker"
+		<template v-if="isLoading">
+			<div class="app-sidebar__loading-indicator">
+				<div class="icon icon-loading app-sidebar-tab-loading-indicator__icon" />
+			</div>
+		</template>
+
+		<template v-else-if="isError">
+			<EmptyContent>
+				{{ $t('calendar', 'Event does not exist') }}
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
+				<template #desc>
+					{{ error }}
+				</template>
+			</EmptyContent>
+		</template>
+
+		<template #header>
+			<IllustrationHeader :color="illustrationColor" :illustration-url="backgroundImage" />
+		</template>
+
+		<template v-if="!isLoading && !isError"
+			#secondary-actions>
+			<ActionLink v-if="!hideEventExport && hasDownloadURL"
+				:href="downloadURL">
+				<template #icon>
+					<Download :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Export') }}
+			</ActionLink>
+			<ActionButton v-if="canDelete && !canCreateRecurrenceException" @click="deleteAndLeave(false)">
+				<template #icon>
+					<Delete :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Delete') }}
+			</ActionButton>
+			<ActionButton v-if="canDelete && canCreateRecurrenceException" @click="deleteAndLeave(false)">
+				<template #icon>
+					<Delete :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Delete this occurrence') }}
+			</ActionButton>
+			<ActionButton v-if="canDelete && canCreateRecurrenceException" @click="deleteAndLeave(true)">
+				<template #icon>
+					<Delete :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Delete this and all future') }}
+			</ActionButton>
+		</template>
+
+		<template v-if="!isLoading && !isError"
+			#description>
+			<PropertyCalendarPicker v-if="showCalendarPicker"
 				:calendars="calendars"
 				:calendar="selectedCalendar"
-				:is-read-only="isReadOnly"
-				@selectCalendar="changeCalendar" />
+				:is-read-only="isReadOnly || !canModifyCalendar"
+				@select-calendar="changeCalendar" />
 
-			<PropertyTitleTimePicker
-				v-if="!isLoading"
-				:start-date="startDate"
+			<PropertyTitleTimePicker :start-date="startDate"
 				:start-timezone="startTimezone"
 				:end-date="endDate"
 				:end-timezone="endTimezone"
@@ -49,189 +99,126 @@
 				:is-read-only="isReadOnly"
 				:can-modify-all-day="canModifyAllDay"
 				:user-timezone="currentUserTimezone"
-				@updateStartDate="updateStartDate"
-				@updateStartTimezone="updateStartTimezone"
-				@updateEndDate="updateEndDate"
-				@updateEndTimezone="updateEndTimezone"
-				@toggleAllDay="toggleAllDay" />
-			<PropertyTitleTimePickerLoadingPlaceholder
-				v-if="isLoading" />
+				:append-to-body="true"
+				@update-start-date="updateStartDate"
+				@update-start-timezone="updateStartTimezone"
+				@update-end-date="updateEndDate"
+				@update-end-timezone="updateEndTimezone"
+				@toggle-all-day="toggleAllDay" />
+
+			<InvitationResponseButtons v-if="isViewedByAttendee && userAsAttendee && !isReadOnly"
+				:attendee="userAsAttendee"
+				:calendar-id="calendarId"
+				:narrow="true"
+				@close="closeEditorAndSkipAction" />
 		</template>
 
-		<template v-slot:header>
-			<IllustrationHeader :color="illustrationColor" :illustration-url="backgroundImage" />
-		</template>
-
-		<template v-slot:secondary-actions>
-			<ActionLink v-if="hasDownloadURL"
-				icon="icon-download"
-				:href="downloadURL">
-				{{ $t('calendar', 'Download') }}
-			</ActionLink>
-			<ActionButton v-if="canDelete && !canCreateRecurrenceException" icon="icon-delete" @click="deleteAndLeave(false)">
-				{{ $t('calendar', 'Delete') }}
-			</ActionButton>
-			<ActionButton v-if="canDelete && canCreateRecurrenceException" icon="icon-delete" @click="deleteAndLeave(false)">
-				{{ $t('calendar', 'Delete this occurrence') }}
-			</ActionButton>
-			<ActionButton v-if="canDelete && canCreateRecurrenceException" icon="icon-delete" @click="deleteAndLeave(true)">
-				{{ $t('calendar', 'Delete this and all future') }}
-			</ActionButton>
-		</template>
-
-		<AppSidebarTab
+		<AppSidebarTab v-if="!isLoading && !isError"
 			id="app-sidebar-tab-details"
 			class="app-sidebar-tab"
-			icon="icon-details"
 			:name="$t('calendar', 'Details')"
 			:order="0">
-			<div v-if="!displayDetails" class="app-sidebar-tab__loading">
-				<div class="app-sidebar-tab-loading-indicator">
-					<div class="icon icon-loading app-sidebar-tab-loading-indicator__icon" />
-				</div>
-			</div>
-			<div v-if="displayDetails" class="app-sidebar-tab__content">
-				<PropertyText
-					:autosize="isExpanded"
-					:is-read-only="isReadOnly"
+			<template #icon>
+				<InformationOutline :size="20" decorative />
+			</template>
+			<div class="app-sidebar-tab__content">
+				<PropertyText :is-read-only="isReadOnly"
 					:prop-model="rfcProps.location"
 					:value="location"
 					@update:value="updateLocation" />
-				<PropertyText
-					:autosize="isExpanded"
-					:is-read-only="isReadOnly"
+				<PropertyText :is-read-only="isReadOnly"
 					:prop-model="rfcProps.description"
 					:value="description"
 					@update:value="updateDescription" />
 
-				<PropertySelect
-					:is-read-only="isReadOnly"
+				<PropertySelect :is-read-only="isReadOnly"
 					:prop-model="rfcProps.status"
 					:value="status"
 					@update:value="updateStatus" />
-				<PropertySelect
-					:is-read-only="isReadOnly"
+				<PropertySelect :is-read-only="isReadOnly"
 					:prop-model="rfcProps.accessClass"
 					:value="accessClass"
 					@update:value="updateAccessClass" />
-				<PropertySelect
-					:is-read-only="isReadOnly"
+				<PropertySelect :is-read-only="isReadOnly"
 					:prop-model="rfcProps.timeTransparency"
 					:value="timeTransparency"
 					@update:value="updateTimeTransparency" />
 
-				<PropertySelectMultiple
-					:colored-options="true"
+				<PropertySelectMultiple :colored-options="true"
 					:is-read-only="isReadOnly"
 					:prop-model="rfcProps.categories"
 					:value="categories"
-					@addSingleValue="addCategory"
-					@removeSingleValue="removeCategory" />
+					@add-single-value="addCategory"
+					@remove-single-value="removeCategory" />
 
-				<PropertyColor
-					:calendar-color="selectedCalendarColor"
+				<PropertyColor :calendar-color="selectedCalendarColor"
 					:is-read-only="isReadOnly"
 					:prop-model="rfcProps.color"
 					:value="color"
 					@update:value="updateColor" />
-			</div>
-			<SaveButtons
-				v-if="showSaveButtons"
-				class="app-sidebar-tab__buttons"
-				:can-create-recurrence-exception="canCreateRecurrenceException"
-				:is-new="isNew"
-				:force-this-and-all-future="forceThisAndAllFuture"
-				@saveThisOnly="saveAndLeave(false)"
-				@saveThisAndAllFuture="saveAndLeave(true)" />
-		</AppSidebarTab>
-		<AppSidebarTab
-			id="app-sidebar-tab-attendees"
-			class="app-sidebar-tab"
-			icon="icon-group"
-			:name="$t('calendar', 'Attendees')"
-			:order="1">
-			<div v-if="!displayDetails" class="app-sidebar-tab__loading">
-				<div class="app-sidebar-tab-loading-indicator">
-					<div class="icon icon-loading app-sidebar-tab-loading-indicator__icon" />
-				</div>
-			</div>
-			<div v-if="displayDetails" class="app-sidebar-tab__content">
-				<InviteesList
-					v-if="!isLoading"
-					:calendar-object-instance="calendarObjectInstance"
+
+				<AlarmList :calendar-object-instance="calendarObjectInstance"
 					:is-read-only="isReadOnly" />
-			</div>
-			<SaveButtons
-				v-if="showSaveButtons"
-				class="app-sidebar-tab__buttons"
-				:can-create-recurrence-exception="canCreateRecurrenceException"
-				:is-new="isNew"
-				:force-this-and-all-future="forceThisAndAllFuture"
-				@saveThisOnly="saveAndLeave(false)"
-				@saveThisAndAllFuture="saveAndLeave(true)" />
-		</AppSidebarTab>
-		<AppSidebarTab
-			id="app-sidebar-tab-reminders"
-			class="app-sidebar-tab"
-			icon="icon-reminder"
-			:name="$t('calendar', 'Reminders')"
-			:order="2">
-			<div v-if="!displayDetails" class="app-sidebar-tab__loading">
-				<div class="app-sidebar-tab-loading-indicator">
-					<div class="icon icon-loading app-sidebar-tab-loading-indicator__icon" />
-				</div>
-			</div>
-			<div v-if="displayDetails" class="app-sidebar-tab__content">
-				<AlarmList
-					:calendar-object-instance="calendarObjectInstance"
-					:is-read-only="isReadOnly" />
-			</div>
-			<SaveButtons
-				v-if="showSaveButtons"
-				class="app-sidebar-tab__buttons"
-				:can-create-recurrence-exception="canCreateRecurrenceException"
-				:is-new="isNew"
-				:force-this-and-all-future="forceThisAndAllFuture"
-				@saveThisOnly="saveAndLeave(false)"
-				@saveThisAndAllFuture="saveAndLeave(true)" />
-		</AppSidebarTab>
-		<AppSidebarTab
-			id="app-sidebar-tab-repeat"
-			class="app-sidebar-tab"
-			icon="icon-repeat"
-			:name="$t('calendar', 'Repeat')"
-			:order="3">
-			<div v-if="!displayDetails" class="app-sidebar-tab__loading">
-				<div class="app-sidebar-tab-loading-indicator">
-					<div class="icon icon-loading app-sidebar-tab-loading-indicator__icon" />
-				</div>
-			</div>
-			<div v-if="displayDetails" class="app-sidebar-tab__content">
+
 				<!-- TODO: If not editing the master item, force updating this and all future   -->
 				<!-- TODO: You can't edit recurrence-rule of no-range recurrence-exception -->
-				<Repeat
-					:calendar-object-instance="calendarObjectInstance"
+				<Repeat :calendar-object-instance="calendarObjectInstance"
 					:recurrence-rule="calendarObjectInstance.recurrenceRule"
 					:is-read-only="isReadOnly"
 					:is-editing-master-item="isEditingMasterItem"
 					:is-recurrence-exception="isRecurrenceException"
-					@forceThisAndAllFuture="forceModifyingFuture" />
+					@force-this-and-all-future="forceModifyingFuture" />
 			</div>
-			<SaveButtons
-				v-if="showSaveButtons"
+			<SaveButtons v-if="showSaveButtons"
 				class="app-sidebar-tab__buttons"
 				:can-create-recurrence-exception="canCreateRecurrenceException"
 				:is-new="isNew"
 				:force-this-and-all-future="forceThisAndAllFuture"
-				@saveThisOnly="saveAndLeave(false)"
-				@saveThisAndAllFuture="saveAndLeave(true)" />
+				@save-this-only="saveAndLeave(false)"
+				@save-this-and-all-future="saveAndLeave(true)" />
 		</AppSidebarTab>
-		<!--<AppSidebarTab :name="$t('calendar', 'Activity')" icon="icon-history" :order="4">-->
-		<!--This is the activity tab-->
-		<!--</AppSidebarTab>-->
-		<!--<AppSidebarTab :name="$t('calendar', 'Projects')" icon="icon-projects" :order="5">-->
-		<!--This is the projects tab-->
-		<!--</AppSidebarTab>-->
+		<AppSidebarTab v-if="!isLoading && !isError"
+			id="app-sidebar-tab-attendees"
+			class="app-sidebar-tab"
+			:name="$t('calendar', 'Attendees')"
+			:order="1">
+			<template #icon>
+				<AccountMultiple :size="20" decorative />
+			</template>
+			<div class="app-sidebar-tab__content">
+				<InviteesList v-if="!isLoading"
+					:calendar-object-instance="calendarObjectInstance"
+					:is-read-only="isReadOnly" />
+			</div>
+			<SaveButtons v-if="showSaveButtons"
+				class="app-sidebar-tab__buttons"
+				:can-create-recurrence-exception="canCreateRecurrenceException"
+				:is-new="isNew"
+				:force-this-and-all-future="forceThisAndAllFuture"
+				@save-this-only="saveAndLeave(false)"
+				@save-this-and-all-future="saveAndLeave(true)" />
+		</AppSidebarTab>
+		<AppSidebarTab v-if="!isLoading && !isError"
+			id="app-sidebar-tab-resources"
+			class="app-sidebar-tab"
+			:name="$t('calendar', 'Resources')"
+			:order="2">
+			<template #icon>
+				<MapMarker :size="20" decorative />
+			</template>
+			<div class="app-sidebar-tab__content">
+				<ResourceList v-if="!isLoading"
+					:calendar-object-instance="calendarObjectInstance"
+					:is-read-only="isReadOnly" />
+			</div>
+			<SaveButtons v-if="showSaveButtons"
+				class="app-sidebar-tab__buttons"
+				:can-create-recurrence-exception="canCreateRecurrenceException"
+				:is-new="isNew"
+				:force-this-and-all-future="forceThisAndAllFuture"
+				@save-this-only="saveAndLeave(false)"
+				@save-this-and-all-future="saveAndLeave(true)" />
+		</AppSidebarTab>
 	</AppSidebar>
 </template>
 <script>
@@ -239,6 +226,7 @@ import AppSidebar from '@nextcloud/vue/dist/Components/AppSidebar'
 import AppSidebarTab from '@nextcloud/vue/dist/Components/AppSidebarTab'
 import ActionLink from '@nextcloud/vue/dist/Components/ActionLink'
 import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
+import EmptyContent from '@nextcloud/vue/dist/Components/EmptyContent'
 
 import { mapState } from 'vuex'
 
@@ -254,31 +242,46 @@ import Repeat from '../components/Editor/Repeat/Repeat.vue'
 import EditorMixin from '../mixins/EditorMixin'
 import IllustrationHeader from '../components/Editor/IllustrationHeader.vue'
 import moment from '@nextcloud/moment'
-import PropertyTitleTimePickerLoadingPlaceholder
-	from '../components/Editor/Properties/PropertyTitleTimePickerLoadingPlaceholder.vue'
 import SaveButtons from '../components/Editor/SaveButtons.vue'
 import PropertySelectMultiple from '../components/Editor/Properties/PropertySelectMultiple.vue'
 import PropertyColor from '../components/Editor/Properties/PropertyColor.vue'
+import ResourceList from '../components/Editor/Resources/ResourceList'
+import InvitationResponseButtons from '../components/Editor/InvitationResponseButtons'
+
+import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
+import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import MapMarker from 'vue-material-design-icons/MapMarker.vue'
 
 export default {
 	name: 'EditSidebar',
 	components: {
+		ResourceList,
 		PropertyColor,
 		PropertySelectMultiple,
 		SaveButtons,
-		PropertyTitleTimePickerLoadingPlaceholder,
 		IllustrationHeader,
 		AlarmList,
 		AppSidebar,
 		AppSidebarTab,
 		ActionLink,
 		ActionButton,
+		EmptyContent,
 		InviteesList,
 		PropertyCalendarPicker,
 		PropertySelect,
 		PropertyText,
 		PropertyTitleTimePicker,
 		Repeat,
+		AccountMultiple,
+		CalendarBlank,
+		Delete,
+		Download,
+		InformationOutline,
+		MapMarker,
+		InvitationResponseButtons,
 	},
 	mixins: [
 		EditorMixin,
@@ -286,7 +289,20 @@ export default {
 	computed: {
 		...mapState({
 			locale: (state) => state.settings.momentLocale,
+			hideEventExport: (state) => state.settings.hideEventExport,
 		}),
+		accessClass() {
+			return this.calendarObjectInstance?.accessClass || null
+		},
+		categories() {
+			return this.calendarObjectInstance?.categories || null
+		},
+		status() {
+			return this.calendarObjectInstance?.status || null
+		},
+		timeTransparency() {
+			return this.calendarObjectInstance?.timeTransparency || null
+		},
 		subTitle() {
 			if (!this.calendarObjectInstance) {
 				return ''
@@ -294,40 +310,23 @@ export default {
 
 			return moment(this.calendarObjectInstance.startDate).locale(this.locale).fromNow()
 		},
-		accessClass() {
-			if (!this.calendarObjectInstance) {
-				return null
+		/**
+		 * @return {boolean}
+		 */
+		canModifyCalendar() {
+			const eventComponent = this.calendarObjectInstance.eventComponent
+			if (!eventComponent) {
+				return true
 			}
 
-			return this.calendarObjectInstance.accessClass
-		},
-		status() {
-			if (!this.calendarObjectInstance) {
-				return null
-			}
-
-			return this.calendarObjectInstance.status
-		},
-		timeTransparency() {
-			if (!this.calendarObjectInstance) {
-				return null
-			}
-
-			return this.calendarObjectInstance.timeTransparency
-		},
-		categories() {
-			if (!this.calendarObjectInstance) {
-				return []
-			}
-
-			return this.calendarObjectInstance.categories
+			return !eventComponent.isPartOfRecurrenceSet() || eventComponent.isExactForkOfPrimary
 		},
 	},
 	methods: {
 		/**
 		 * Updates the access-class of this event
 		 *
-		 * @param {String} accessClass The new access class
+		 * @param {string} accessClass The new access class
 		 */
 		updateAccessClass(accessClass) {
 			this.$store.commit('changeAccessClass', {
@@ -338,7 +337,7 @@ export default {
 		/**
 		 * Updates the status of the event
 		 *
-		 * @param {String} status The new status
+		 * @param {string} status The new status
 		 */
 		updateStatus(status) {
 			this.$store.commit('changeStatus', {
@@ -349,7 +348,7 @@ export default {
 		/**
 		 * Updates the time-transparency of the event
 		 *
-		 * @param {String} timeTransparency The new time-transparency
+		 * @param {string} timeTransparency The new time-transparency
 		 */
 		updateTimeTransparency(timeTransparency) {
 			this.$store.commit('changeTimeTransparency', {
@@ -360,7 +359,7 @@ export default {
 		/**
 		 * Adds a category to the event
 		 *
-		 * @param {String} category Category to add
+		 * @param {string} category Category to add
 		 */
 		addCategory(category) {
 			this.$store.commit('addCategory', {
@@ -371,7 +370,7 @@ export default {
 		/**
 		 * Removes a category from the event
 		 *
-		 * @param {String} category Category to remove
+		 * @param {string} category Category to remove
 		 */
 		removeCategory(category) {
 			this.$store.commit('removeCategory', {
@@ -382,7 +381,7 @@ export default {
 		/**
 		 * Updates the color of the event
 		 *
-		 * @param {String} customColor The new color
+		 * @param {string} customColor The new color
 		 */
 		updateColor(customColor) {
 			this.$store.commit('changeCustomColor', {
@@ -393,3 +392,9 @@ export default {
 	},
 }
 </script>
+
+<style lang="scss" scoped>
+::v-deep .app-sidebar-header__description {
+	flex-direction: column;
+}
+</style>

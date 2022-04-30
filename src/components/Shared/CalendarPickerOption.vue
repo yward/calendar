@@ -22,16 +22,14 @@
 
 <template>
 	<div class="calendar-picker-option">
-		<div
-			class="calendar-picker-option__color-indicator"
+		<div class="calendar-picker-option__color-indicator"
 			:style="{ backgroundColor: color }" />
 
-		<span>
+		<span class="calendar-picker-option__label">
 			{{ displayName }}
 		</span>
 
-		<Avatar
-			v-if="isSharedWithMe"
+		<Avatar v-if="isSharedWithMe"
 			class="calendar-picker-option__avatar"
 			:disable-menu="true"
 			:disable-tooltip="true"
@@ -71,7 +69,7 @@ export default {
 		/**
 		 * Get the principal object of the calendar's owner
 		 *
-		 * @returns {null|Object}
+		 * @return {null | object}
 		 */
 		principal() {
 			return this.$store.getters.getPrincipalByUrl(this.owner)
@@ -79,7 +77,7 @@ export default {
 		/**
 		 * Gets the user-id of the calendar's owner
 		 *
-		 * @returns {null|String}
+		 * @return {null | string}
 		 */
 		userId() {
 			if (this.principal) {
@@ -91,7 +89,7 @@ export default {
 		/**
 		 * Gets the displayname of the calendar's owner
 		 *
-		 * @returns {null|String}
+		 * @return {null | string}
 		 */
 		userDisplayName() {
 			if (this.principal) {

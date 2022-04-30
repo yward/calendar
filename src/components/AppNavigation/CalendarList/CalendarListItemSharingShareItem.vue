@@ -20,17 +20,18 @@
   -->
 
 <template>
-	<AppNavigationItem
-		:title="sharee.displayName">
+	<AppNavigationItem :title="sharee.displayName">
 		<template slot="icon">
-			<div v-if="sharee.isGroup" class="avatar icon-group" />
+			<AccountMultiple v-if="sharee.isGroup"
+				:size="18"
+				decorative
+				class="avatar" />
 			<div v-else-if="sharee.isCircle" class="avatar icon-circle" />
 			<Avatar v-else :user="sharee.id" :display-name="sharee.displayName" />
 		</template>
 
 		<template slot="counter">
-			<ActionCheckbox
-				:disabled="updatingSharee"
+			<ActionCheckbox :disabled="updatingSharee"
 				:checked="sharee.writeable"
 				@update:checked="updatePermission">
 				{{ $t('calendar', 'can edit') }}
@@ -38,10 +39,11 @@
 		</template>
 
 		<template slot="actions">
-			<ActionButton
-				icon="icon-delete"
-				:disabled="updatingSharee"
+			<ActionButton :disabled="updatingSharee"
 				@click.prevent.stop="unshare">
+				<template #icon>
+					<Delete :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Unshare with {displayName}', { displayName: sharee.displayName }) }}
 			</ActionButton>
 		</template>
@@ -57,6 +59,9 @@ import {
 	showInfo,
 } from '@nextcloud/dialogs'
 
+import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+
 export default {
 	name: 'CalendarListItemSharingShareItem',
 	components: {
@@ -64,6 +69,8 @@ export default {
 		ActionCheckbox,
 		AppNavigationItem,
 		Avatar,
+		AccountMultiple,
+		Delete,
 	},
 	props: {
 		calendar: {
@@ -89,7 +96,7 @@ export default {
 		/**
 		 * Unshares the calendar from the given sharee
 		 *
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async unshare() {
 			this.updatingSharee = true
@@ -109,7 +116,7 @@ export default {
 		/**
 		 * Toggles the write-permission of the share
 		 *
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async updatePermission() {
 			this.updatingSharee = true

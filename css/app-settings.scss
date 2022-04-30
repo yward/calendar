@@ -52,12 +52,32 @@
 			display: block;
 			text-align: center;
 			background-position-x: 8px;
+			position: relative;
+
+			.material-design-icon {
+				position: absolute;
+			}
 		}
 
 		&--slotDuration,
+		&--defaultReminder {
+			display: table;
+
+			label {
+				display: table-cell;
+				min-width: 50%;
+				vertical-align: middle;
+			}
+
+			.multiselect {
+				display: table-cell;
+				width: 50%;
+			}
+		}
+		
 		&--timezone {
 			width: 100%;
-
+		
 			.multiselect {
 				width: 100%;
 			}

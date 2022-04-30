@@ -21,8 +21,7 @@
   -->
 
 <template>
-	<DatetimePicker
-		:clearable="false"
+	<DatetimePicker :clearable="false"
 		:first-day-of-week="firstDay"
 		:format="format"
 		:lang="lang"
@@ -41,10 +40,9 @@ import DatetimePicker from '@nextcloud/vue/dist/Components/DatetimePicker'
 import moment from '@nextcloud/moment'
 import { mapState } from 'vuex'
 import {
-	getDayNamesMin,
 	getFirstDay,
-	getMonthNamesShort,
 } from '@nextcloud/l10n'
+import { getLangConfigForVue2DatePicker } from '../../utils/localization.js'
 
 export default {
 	name: 'TimePicker',
@@ -59,13 +57,6 @@ export default {
 	},
 	data() {
 		return {
-			lang: {
-				days: getDayNamesMin(),
-				months: getMonthNamesShort(),
-				placeholder: {
-					date: this.$t('calendar', 'Select Date'),
-				},
-			},
 			firstDay: getFirstDay() === 0 ? 7 : getFirstDay(),
 			format: {
 				stringify: this.stringify,
@@ -78,9 +69,17 @@ export default {
 			locale: (state) => state.settings.momentLocale,
 		}),
 		/**
+		 * Returns the lang config for vue2-datepicker
+		 *
+		 * @return {object}
+		 */
+		lang() {
+			return getLangConfigForVue2DatePicker(this.locale)
+		},
+		/**
 		 * Whether or not to offer am/pm in the timepicker
 		 *
-		 * @returns {Boolean}
+		 * @return {boolean}
 		 */
 		showAmPm() {
 			const localeData = moment().locale(this.locale).localeData()
@@ -102,7 +101,7 @@ export default {
 		 * Formats the date string
 		 *
 		 * @param {Date} date The date for format
-		 * @returns {String}
+		 * @return {string}
 		 */
 		stringify(date) {
 			return moment(date).locale(this.locale).format('LT')
@@ -110,8 +109,8 @@ export default {
 		/**
 		 * Parses the user input from the input field
 		 *
-		 * @param {String} value The user-input to be parsed
-		 * @returns {Date}
+		 * @param {string} value The user-input to be parsed
+		 * @return {Date}
 		 */
 		parse(value) {
 			return moment(value, 'LT', this.locale).toDate()

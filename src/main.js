@@ -1,11 +1,13 @@
 /**
  * @copyright Copyright (c) 2019 Georg Ehrke
+ *
  * @copyright Copyright (c) 2019 John Molakvoæ
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
+ *
  * @author John Molakvoæ <skjnldsv@protonmail.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,6 +25,8 @@
  */
 import 'core-js/stable'
 
+import '../css/calendar.scss'
+
 import Vue from 'vue'
 import App from './App'
 import router from './router'
@@ -30,7 +34,9 @@ import store from './store'
 import { sync } from 'vuex-router-sync'
 import { getRequestToken } from '@nextcloud/auth'
 import { linkTo } from '@nextcloud/router'
+import { loadState } from '@nextcloud/initial-state'
 import { translate, translatePlural } from '@nextcloud/l10n'
+import AppointmentConfig from './models/appointmentConfig'
 import ClickOutside from 'vue-click-outside'
 import VueClipboard from 'vue-clipboard2'
 import VTooltip from 'v-tooltip'
@@ -64,6 +70,11 @@ Vue.prototype.t = translate
 Vue.prototype.n = translatePlural
 
 windowTitleService(router, store)
+
+store.commit(
+	'addInitialConfigs',
+	loadState('calendar', 'appointmentConfigs', []).map(config => new AppointmentConfig(config))
+)
 
 export default new Vue({
 	el: '#content',

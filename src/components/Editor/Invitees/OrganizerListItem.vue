@@ -22,10 +22,10 @@
 
 <template>
 	<div class="invitees-list-item">
-		<AvatarParticipationStatus
-			:attendee-is-organizer="true"
+		<AvatarParticipationStatus :attendee-is-organizer="true"
 			:avatar-link="avatarLink"
 			:is-viewed-by-organizer="isViewedByOrganizer"
+			:is-resource="isResource"
 			:common-name="commonName"
 			:organizer-display-name="commonName"
 			participation-status="ACCEPTED" />
@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import AvatarParticipationStatus from './AvatarParticipationStatus'
+import AvatarParticipationStatus from '../AvatarParticipationStatus'
 
 export default {
 	name: 'OrganizerListItem',
@@ -75,6 +75,23 @@ export default {
 		isViewedByOrganizer() {
 			return true
 		},
+		isResource() {
+			// The organizer does not have a tooltip
+			return false
+		},
 	},
 }
 </script>
+<style lang="scss" scoped>
+.invitees-list-item__displayname {
+	margin-bottom: 13px;
+}
+
+.invitees-list-item__organizer-hint {
+	margin-bottom: 14px;
+}
+
+.avatar-participation-status {
+	margin-top: 10px;
+}
+</style>

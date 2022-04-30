@@ -20,60 +20,71 @@
   -->
 
 <template>
-	<AppNavigationItem
-		class="app-navigation-entry-new-calendar"
+	<AppNavigationItem class="app-navigation-entry-new-calendar"
 		:class="{'app-navigation-entry-new-calendar--open': isOpen}"
 		:title="$t('calendar', '+ New calendar')"
 		:menu-open.sync="isOpen"
 		menu-icon="icon-add"
 		@click.prevent.stop="toggleDialog">
+		<template #menu-icon>
+			<Plus :size="20" decorative />
+		</template>
 		<template slot="actions">
-			<ActionButton
-				v-if="showCreateCalendarLabel"
-				icon="icon-new-calendar"
+			<ActionButton v-if="showCreateCalendarLabel"
 				@click.prevent.stop="openCreateCalendarInput">
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'New calendar') }}
 			</ActionButton>
-			<ActionInput
-				v-if="showCreateCalendarInput"
-				icon="icon-new-calendar"
-				@submit.prevent.stop="createNewCalendar" />
-			<ActionText
-				v-if="showCreateCalendarSaving"
+			<ActionInput v-if="showCreateCalendarInput"
+				:aria-label="$t('calendar', 'Name for new calendar')"
+				@submit.prevent.stop="createNewCalendar">
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
+			</ActionInput>
+			<ActionText v-if="showCreateCalendarSaving"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Creating calendar …') }}
 			</ActionText>
 
-			<ActionButton
-				v-if="showCreateCalendarTaskListLabel"
-				icon="icon-new-calendar-with-task-list"
+			<ActionButton v-if="showCreateCalendarTaskListLabel"
 				@click.prevent.stop="openCreateCalendarTaskListInput">
+				<template #icon>
+					<CalendarCheck :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'New calendar with task list') }}
 			</ActionButton>
-			<ActionInput
-				v-if="showCreateCalendarTaskListInput"
-				icon="icon-new-calendar-with-task-list"
-				@submit.prevent.stop="createNewCalendarTaskList" />
-			<ActionText
-				v-if="showCreateCalendarTaskListSaving"
+			<ActionInput v-if="showCreateCalendarTaskListInput"
+				:aria-label="$t('calendar', 'Name for new calendar')"
+				@submit.prevent.stop="createNewCalendarTaskList">
+				<template #icon>
+					<CalendarCheck :size="20" decorative />
+				</template>
+			</ActionInput>
+			<ActionText v-if="showCreateCalendarTaskListSaving"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Creating calendar …') }}
 			</ActionText>
 
-			<ActionButton
-				v-if="showCreateSubscriptionLabel"
-				icon="icon-public"
+			<ActionButton v-if="showCreateSubscriptionLabel"
 				@click.prevent.stop="openCreateSubscriptionInput">
+				<template #icon>
+					<LinkVariant :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'New subscription from link (read-only)') }}
 			</ActionButton>
-			<ActionInput
-				v-if="showCreateSubscriptionInput"
-				icon="icon-public"
-				@submit.prevent.stop="createNewSubscription" />
-			<ActionText
-				v-if="showCreateSubscriptionSaving"
+			<ActionInput v-if="showCreateSubscriptionInput"
+				:aria-label="$t('calendar', 'Name for new calendar')"
+				@submit.prevent.stop="createNewSubscription">
+				<template #icon>
+					<LinkVariant :size="20" decorative />
+				</template>
+			</ActionInput>
+			<ActionText v-if="showCreateSubscriptionSaving"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Creating subscription …') }}
@@ -93,6 +104,11 @@ import {
 
 import { uidToHexColor } from '../../../utils/color.js'
 
+import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
+import CalendarCheck from 'vue-material-design-icons/CalendarCheck.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+
 export default {
 	name: 'CalendarListNew',
 	components: {
@@ -100,8 +116,12 @@ export default {
 		ActionInput,
 		ActionText,
 		AppNavigationItem,
+		CalendarBlank,
+		CalendarCheck,
+		LinkVariant,
+		Plus,
 	},
-	data: function() {
+	data() {
 		return {
 			// Open state
 			isOpen: false,

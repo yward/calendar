@@ -20,22 +20,26 @@
   -->
 
 <template>
-	<AppNavigationItem
-		:title="$t('calendar', 'Share link')"
+	<AppNavigationItem :title="$t('calendar', 'Share link')"
 		:menu-open.sync="menuOpen">
 		<template slot="icon">
-			<div :class="{published: isPublished, 'icon-public': !isPublished, 'icon-public-white': isPublished}" class="avatar" />
+			<LinkVariant :class="{published: isPublished}"
+				:size="18"
+				decorative
+				class="avatar" />
 		</template>
 
 		<template v-if="!isPublished" slot="actions">
-			<ActionButton
-				v-if="!publishingCalendar"
-				icon="icon-add"
+			<ActionButton v-if="!publishingCalendar"
+				key="publish"
 				@click.prevent.stop="publishCalendar">
+				<template #icon>
+					<Plus :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Publish calendar') }}
 			</ActionButton>
-			<ActionButton
-				v-if="publishingCalendar"
+			<ActionButton v-else
+				key="publishing"
 				icon="icon-loading-small"
 				:disabled="true">
 				{{ $t('calendar', 'Publishing calendar') }}
@@ -44,87 +48,94 @@
 
 		<template v-if="isPublished" slot="counter">
 			<Actions>
-				<ActionButton
-					icon="icon-clippy"
-					@click.prevent.stop="copyPublicLink">
+				<ActionButton @click.prevent.stop="copyPublicLink">
+					<template #icon>
+						<ClipboardArrowLeftOutline :size="20" decorative />
+					</template>
 					{{ $t('calendar', 'Copy public link') }}
 				</ActionButton>
 			</Actions>
 		</template>
 		<template v-if="isPublished" slot="actions">
-			<ActionButton
-				v-if="showEMailLabel"
-				icon="icon-mail"
+			<ActionButton v-if="showEMailLabel"
 				@click.prevent.stop="openEMailLinkInput">
+				<template #icon>
+					<Email :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Send link to calendar via email') }}
 			</ActionButton>
-			<ActionInput
-				v-if="showEMailInput"
-				icon="icon-mail"
+			<ActionInput v-if="showEMailInput"
 				@submit.prevent.stop="sendLinkViaEMail">
+				<template #icon>
+					<Email :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Enter one address') }}
 			</ActionInput>
-			<ActionText
-				v-if="showEMailSending"
+			<ActionText v-if="showEMailSending"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Sending email …') }}
 			</ActionText>
 
-			<ActionButton
-				v-if="showCopySubscriptionLinkLabel"
-				icon="icon-calendar-dark"
+			<ActionButton v-if="showCopySubscriptionLinkLabel"
 				@click.prevent.stop="copySubscriptionLink">
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copy subscription link') }}
 			</ActionButton>
-			<ActionText
-				v-if="showCopySubscriptionLinkSpinner"
+			<ActionText v-if="showCopySubscriptionLinkSpinner"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Copying link …') }}
 			</ActionText>
-			<ActionText
-				v-if="showCopySubscriptionLinkSuccess"
+			<ActionText v-if="showCopySubscriptionLinkSuccess"
 				icon="icon-calendar-dark">
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copied link') }}
 			</ActionText>
-			<ActionText
-				v-if="showCopySubscriptionLinkError"
-				icon="icon-calendar-dark">
+			<ActionText v-if="showCopySubscriptionLinkError">
+				<template #icon>
+					<CalendarBlank :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Could not copy link') }}
 			</ActionText>
 
-			<ActionButton
-				v-if="showCopyEmbedCodeLinkLabel"
-				icon="icon-embed"
+			<ActionButton v-if="showCopyEmbedCodeLinkLabel"
 				@click.prevent.stop="copyEmbedCode">
+				<template #icon>
+					<CodeBrackets :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copy embedding code') }}
 			</ActionButton>
-			<ActionText
-				v-if="showCopyEmbedCodeLinkSpinner"
+			<ActionText v-if="showCopyEmbedCodeLinkSpinner"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Copying code …') }}
 			</ActionText>
-			<ActionText
-				v-if="showCopyEmbedCodeLinkSuccess"
-				icon="icon-embed">
+			<ActionText v-if="showCopyEmbedCodeLinkSuccess">
+				<template #icon>
+					<CodeBrackets :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copied code') }}
 			</ActionText>
-			<ActionText
-				v-if="showCopyEmbedCodeLinkError"
-				icon="icon-embed">
+			<ActionText v-if="showCopyEmbedCodeLinkError">
+				<template #icon>
+					<CodeBrackets :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Could not copy code') }}
 			</ActionText>
 
-			<ActionButton
-				v-if="!unpublishingCalendar"
-				icon="icon-delete"
+			<ActionButton v-if="!unpublishingCalendar"
 				@click.prevent.stop="unpublishCalendar">
+				<template #icon>
+					<Delete :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Delete share link') }}
 			</ActionButton>
-			<ActionText
-				v-if="unpublishingCalendar"
+			<ActionText v-if="unpublishingCalendar"
 				icon="icon-loading-small">
 				<!-- eslint-disable-next-line no-irregular-whitespace -->
 				{{ $t('calendar', 'Deleting share link …') }}
@@ -151,6 +162,14 @@ import {
 } from '@nextcloud/dialogs'
 import HttpClient from '@nextcloud/axios'
 
+import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
+import ClipboardArrowLeftOutline from 'vue-material-design-icons/ClipboardArrowLeftOutline.vue'
+import CodeBrackets from 'vue-material-design-icons/CodeBrackets.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Email from 'vue-material-design-icons/Email.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+
 export default {
 	name: 'CalendarListItemSharingPublishItem',
 	components: {
@@ -159,6 +178,13 @@ export default {
 		ActionInput,
 		ActionText,
 		AppNavigationItem,
+		CalendarBlank,
+		ClipboardArrowLeftOutline,
+		CodeBrackets,
+		Delete,
+		Email,
+		LinkVariant,
+		Plus,
 	},
 	directives: {
 		ClickOutside,

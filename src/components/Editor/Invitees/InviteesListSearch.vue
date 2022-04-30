@@ -2,6 +2,7 @@
   - @copyright Copyright (c) 2019 Georg Ehrke <oc.list@georgehrke.com>
   -
   - @author Georg Ehrke <oc.list@georgehrke.com>
+  - @author Richard Steinmetz <richard@steinmetz.cloud>
   -
   - @license GNU AGPL version 3 or any later version
   -
@@ -21,8 +22,7 @@
   -->
 
 <template>
-	<Multiselect
-		class="invitees-search"
+	<Multiselect class="invitees-search__multiselect"
 		:options="matches"
 		:searchable="true"
 		:internal-search="false"
@@ -32,45 +32,28 @@
 		:placeholder="placeholder"
 		:class="{ 'showContent': inputGiven, 'icon-loading': isLoading }"
 		open-direction="bottom"
-		track-by="email"
+		track-by="uid"
 		label="dropdownName"
 		@search-change="findAttendees"
 		@select="addAttendee">
-		<!--<template slot="singleLabel" slot-scope="props"><img class="option__image" :src="props.option.img" alt="No Man’s Sky"><span class="option__desc"><span class="option__title">{{ props.option.title }}</span></span></template>-->
-		<template slot="singleLabel" slot-scope="props">
+		<template #option="{ option }">
 			<div class="invitees-search-list-item">
-				<Avatar v-if="props.option.isUser" :user="props.option.avatar" :display-name="props.option.dropdownName" />
-				<Avatar v-if="!props.option.isUser" :url="props.option.avatar" :display-name="props.option.dropdownName" />
-				<div v-if="props.option.hasMultipleEMails" class="invitees-search-list-item__label invitees-search-list-item__label--with-displayname">
+				<!-- We need to specify a unique key here for the avatar to be reactive. -->
+				<Avatar v-if="option.isUser"
+					:key="option.uid"
+					:user="option.avatar"
+					:display-name="option.dropdownName" />
+				<Avatar v-else
+					:key="option.uid"
+					:url="option.avatar"
+					:display-name="option.dropdownName" />
+
+				<div class="invitees-search-list-item__label">
 					<div>
-						{{ props.option.commonName }}
+						{{ option.dropdownName }}
 					</div>
-					<div>
-						{{ props.option.email }}
-					</div>
-				</div>
-				<div v-else class="invitees-search-list-item__label invitees-search-list-item__label--single-email">
-					<div>
-						{{ props.option.dropdownName }}
-					</div>
-				</div>
-			</div>
-		</template>
-		<template slot="option" slot-scope="props">
-			<div class="invitees-search-list-item">
-				<Avatar v-if="props.option.isUser" :user="props.option.avatar" :display-name="props.option.dropdownName" />
-				<Avatar v-if="!props.option.isUser" :url="props.option.avatar" :display-name="props.option.dropdownName" />
-				<div v-if="props.option.hasMultipleEMails" class="invitees-search-list-item__label invitees-search-list-item__label--with-multiple-email">
-					<div>
-						{{ props.option.commonName }}
-					</div>
-					<div>
-						{{ props.option.email }}
-					</div>
-				</div>
-				<div v-else class="invitees-search-list-item__label invitees-search-list-item__label--single-email">
-					<div>
-						{{ props.option.dropdownName }}
+					<div v-if="option.email !== option.dropdownName">
+						{{ option.email }}
 					</div>
 				</div>
 			</div>
@@ -81,7 +64,7 @@
 <script>
 import Avatar from '@nextcloud/vue/dist/Components/Avatar'
 import Multiselect from '@nextcloud/vue/dist/Components/Multiselect'
-import client from '../../../services/caldavService.js'
+import { principalPropertySearchByDisplaynameOrEmail } from '../../../services/caldavService.js'
 import HttpClient from '@nextcloud/axios'
 import debounce from 'debounce'
 import { linkTo } from '@nextcloud/router'
@@ -107,7 +90,7 @@ export default {
 	},
 	computed: {
 		placeholder() {
-			return this.$t('calendar', 'Search for e-mails, users, contacts, resources or rooms')
+			return this.$t('calendar', 'Search for emails, users or contacts')
 		},
 		noResult() {
 			return this.$t('calendar', 'No match found')
@@ -148,6 +131,11 @@ export default {
 					}
 				}
 
+				// Generate a unique id for every result to make the avatar components reactive
+				for (const match of matches) {
+					match.uid = Math.random().toString(16).slice(2)
+				}
+
 				this.isLoading = false
 				this.inputGiven = true
 			} else {
@@ -158,7 +146,7 @@ export default {
 			this.matches = matches
 		}, 500),
 		addAttendee(selectedValue) {
-			this.$emit('addAttendee', selectedValue)
+			this.$emit('add-attendee', selectedValue)
 		},
 		async findAttendeesFromContactsAPI(query) {
 			let response
@@ -193,7 +181,7 @@ export default {
 					arr.push({
 						calendarUserType: 'INDIVIDUAL',
 						commonName: result.name,
-						email: email,
+						email,
 						isUser: false,
 						avatar: result.photo,
 						language: result.lang,
@@ -209,7 +197,7 @@ export default {
 		async findAttendeesFromDAV(query) {
 			let results
 			try {
-				results = await client.principalPropertySearchByDisplayname(query)
+				results = await principalPropertySearchByDisplaynameOrEmail(query)
 			} catch (error) {
 				console.debug(error)
 				return []
@@ -221,11 +209,16 @@ export default {
 				}
 
 				if (this.alreadyInvitedEmails.includes(principal.email)) {
-					return
+					return false
 				}
 
 				// We do not support GROUPS for now
 				if (principal.calendarUserType === 'GROUP') {
+					return false
+				}
+
+				// Do not include resources and rooms
+				if (['ROOM', 'RESOURCE'].includes(principal.calendarUserType)) {
 					return false
 				}
 
@@ -235,7 +228,7 @@ export default {
 					commonName: principal.displayname,
 					calendarUserType: principal.calendarUserType,
 					email: principal.email,
-					lang: null,
+					language: principal.language,
 					isUser: principal.calendarUserType === 'INDIVIDUAL',
 					avatar: principal.userId,
 					hasMultipleEMails: false,

@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,12 +20,23 @@
  *
  */
 import autosize from 'autosize'
+import debounce from 'debounce'
+
+let resizeObserver
+
+if (window.ResizeObserver) {
+	resizeObserver = new ResizeObserver(debounce(entries => {
+		for (const entry of entries) {
+			autosize.update(entry.target)
+		}
+	}), 20)
+}
 
 /**
  * Adds autosize to textarea on bind
  *
  * @param {Element} el The DOM element
- * @param {Object} binding The binding's object
+ * @param {object} binding The binding's object
  * @param {VNode} vnode Virtual node
  */
 const bind = (el, binding, vnode) => {
@@ -42,13 +53,17 @@ const bind = (el, binding, vnode) => {
 	vnode.context.$nextTick(() => {
 		autosize(el)
 	})
+
+	if (resizeObserver) {
+		resizeObserver.observe(el)
+	}
 }
 
 /**
  * Updates the size of the textarea when updated
  *
  * @param {Element} el The DOM element
- * @param {Object} binding The binding's object
+ * @param {object} binding The binding's object
  * @param {VNode} vnode Virtual node
  */
 const update = (el, binding, vnode) => {
@@ -70,6 +85,9 @@ const update = (el, binding, vnode) => {
  */
 const unbind = (el) => {
 	autosize.destroy(el)
+	if (resizeObserver) {
+		resizeObserver.unobserve(el)
+	}
 }
 
 export default {

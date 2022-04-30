@@ -23,50 +23,45 @@
 	<AppNavigationSettings :title="settingsTitle">
 		<ul class="settings-fieldset-interior">
 			<SettingsImportSection :is-disabled="loadingCalendars" />
-			<ActionCheckbox
-				class="settings-fieldset-interior-item"
+			<ActionCheckbox class="settings-fieldset-interior-item"
 				:checked="birthdayCalendar"
 				:disabled="isBirthdayCalendarDisabled"
 				@update:checked="toggleBirthdayEnabled">
 				{{ $t('calendar', 'Enable birthday calendar') }}
 			</ActionCheckbox>
-			<ActionCheckbox
-				class="settings-fieldset-interior-item"
+			<ActionCheckbox class="settings-fieldset-interior-item"
 				:checked="showTasks"
 				:disabled="savingTasks"
 				@update:checked="toggleTasksEnabled">
 				{{ $t('calendar', 'Show tasks in calendar') }}
 			</ActionCheckbox>
-			<ActionCheckbox
-				class="settings-fieldset-interior-item"
+			<ActionCheckbox class="settings-fieldset-interior-item"
 				:checked="showPopover"
 				:disabled="savingPopover"
 				@update:checked="togglePopoverEnabled">
 				{{ $t('calendar', 'Enable simplified editor') }}
 			</ActionCheckbox>
-			<ActionCheckbox
-				class="settings-fieldset-interior-item"
+			<ActionCheckbox class="settings-fieldset-interior-item"
 				:checked="eventLimit"
 				:disabled="savingEventLimit"
 				@update:checked="toggleEventLimitEnabled">
 				{{ $t('calendar', 'Limit visible events per view') }}
 			</ActionCheckbox>
-			<ActionCheckbox
-				class="settings-fieldset-interior-item"
+			<ActionCheckbox class="settings-fieldset-interior-item"
 				:checked="showWeekends"
 				:disabled="savingWeekend"
 				@update:checked="toggleWeekendsEnabled">
 				{{ $t('calendar', 'Show weekends') }}
 			</ActionCheckbox>
-			<ActionCheckbox
-				class="settings-fieldset-interior-item"
+			<ActionCheckbox class="settings-fieldset-interior-item"
 				:checked="showWeekNumbers"
 				:disabled="savingWeekNumber"
 				@update:checked="toggleWeekNumberEnabled">
 				{{ $t('calendar', 'Show week numbers') }}
 			</ActionCheckbox>
 			<li class="settings-fieldset-interior-item settings-fieldset-interior-item--slotDuration">
-				<Multiselect
+				<label for="slotDuration">{{ $t('calendar', 'Time increments') }}</label>
+				<Multiselect :id="slotDuration"
 					:allow-empty="false"
 					:options="slotDurationOptions"
 					:value="selectedDurationOption"
@@ -75,19 +70,44 @@
 					label="label"
 					@select="changeSlotDuration" />
 			</li>
+			<li class="settings-fieldset-interior-item settings-fieldset-interior-item--defaultReminder">
+				<label for="defaultReminder">{{ $t('calendar', 'Default reminder') }}</label>
+				<Multiselect :id="defaultReminder"
+					:allow-empty="false"
+					:options="defaultReminderOptions"
+					:value="selectedDefaultReminderOption"
+					:disabled="savingDefaultReminder"
+					track-by="value"
+					label="label"
+					@select="changeDefaultReminder" />
+			</li>
 			<SettingsTimezoneSelect :is-disabled="loadingCalendars" />
-			<ActionButton class="settings-fieldset-interior-item" icon="icon-clippy" @click.prevent.stop="copyPrimaryCalDAV">
+			<ActionButton @click.prevent.stop="copyPrimaryCalDAV">
+				<template #icon>
+					<ClipboardArrowLeftOutline :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copy primary CalDAV address') }}
 			</ActionButton>
-			<ActionButton class="settings-fieldset-interior-item" icon="icon-clippy" @click.prevent.stop="copyAppleCalDAV">
+			<ActionButton @click.prevent.stop="copyAppleCalDAV">
+				<template #icon>
+					<ClipboardArrowLeftOutline :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Copy iOS/macOS CalDAV address') }}
 			</ActionButton>
-			<ActionButton
-				v-shortkey.propagate="['h']"
-				class="settings-fieldset-interior-item"
-				icon="icon-info"
+			<ActionLink v-if="hasAppointmentsFeature"
+				:href="availabilitySettingsUrl"
+				target="_blank">
+				<template #icon>
+					<OpenInNewIcon :size="20" decorative />
+				</template>
+				{{ $t('calendar', 'Personal availability settings') }}
+			</ActionLink>
+			<ActionButton v-shortkey.propagate="['h']"
 				@click.prevent.stop="showKeyboardShortcuts"
 				@shortkey.native="toggleKeyboardShortcuts">
+				<template #icon>
+					<InformationVariant :size="20" decorative />
+				</template>
 				{{ $t('calendar', 'Show keyboard shortcuts') }}
 			</ActionButton>
 			<ShortcutOverview v-if="displayKeyboardShortcuts" @close="hideKeyboardShortcuts" />
@@ -98,10 +118,12 @@
 <script>
 import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
 import ActionCheckbox from '@nextcloud/vue/dist/Components/ActionCheckbox'
+import ActionLink from '@nextcloud/vue/dist/Components/ActionLink'
 import AppNavigationSettings from '@nextcloud/vue/dist/Components/AppNavigationSettings'
 import Multiselect from '@nextcloud/vue/dist/Components/Multiselect'
 import {
 	generateRemoteUrl,
+	generateUrl,
 } from '@nextcloud/router'
 import {
 	mapGetters,
@@ -116,8 +138,19 @@ import {
 import SettingsImportSection from './Settings/SettingsImportSection.vue'
 import SettingsTimezoneSelect from './Settings/SettingsTimezoneSelect.vue'
 
-import client from '../../services/caldavService.js'
+import { getCurrentUserPrincipal } from '../../services/caldavService.js'
 import ShortcutOverview from './Settings/ShortcutOverview.vue'
+import {
+	IMPORT_STAGE_DEFAULT,
+	IMPORT_STAGE_IMPORTING,
+	IMPORT_STAGE_PROCESSING,
+} from '../../models/consts.js'
+
+import { getDefaultAlarms } from '../../defaults/defaultAlarmProvider.js'
+
+import ClipboardArrowLeftOutline from 'vue-material-design-icons/ClipboardArrowLeftOutline.vue'
+import InformationVariant from 'vue-material-design-icons/InformationVariant.vue'
+import OpenInNewIcon from 'vue-material-design-icons/OpenInNew'
 
 export default {
 	name: 'Settings',
@@ -125,10 +158,14 @@ export default {
 		ShortcutOverview,
 		ActionButton,
 		ActionCheckbox,
+		ActionLink,
 		AppNavigationSettings,
 		Multiselect,
 		SettingsImportSection,
 		SettingsTimezoneSelect,
+		ClipboardArrowLeftOutline,
+		InformationVariant,
+		OpenInNewIcon,
 	},
 	props: {
 		loadingCalendars: {
@@ -136,13 +173,14 @@ export default {
 			default: false,
 		},
 	},
-	data: function() {
+	data() {
 		return {
 			savingBirthdayCalendar: false,
 			savingEventLimit: false,
 			savingTasks: false,
 			savingPopover: false,
 			savingSlotDuration: false,
+			savingDefaultReminder: false,
 			savingWeekend: false,
 			savingWeekNumber: false,
 			displayKeyboardShortcuts: false,
@@ -159,6 +197,7 @@ export default {
 			showWeekends: state => state.settings.showWeekends,
 			showWeekNumbers: state => state.settings.showWeekNumbers,
 			slotDuration: state => state.settings.slotDuration,
+			defaultReminder: state => state.settings.defaultReminder,
 			timezone: state => state.settings.timezone,
 			locale: (state) => state.settings.momentLocale,
 		}),
@@ -169,13 +208,13 @@ export default {
 			return this.$store.state.importFiles.importFiles
 		},
 		showUploadButton() {
-			return this.$store.state.importState.importState.stage === 'default'
+			return this.$store.state.importState.importState.stage === IMPORT_STAGE_DEFAULT
 		},
 		showImportModal() {
-			return this.$store.state.importState.importState.stage === 'processing'
+			return this.$store.state.importState.importState.stage === IMPORT_STAGE_PROCESSING
 		},
 		showProgressBar() {
-			return this.$store.state.importState.importState.stage === 'importing'
+			return this.$store.state.importState.importState.stage === IMPORT_STAGE_IMPORTING
 		},
 		settingsTitle() {
 			return this.$t('calendar', 'Settings & import').replace(/&amp;/g, '&')
@@ -203,6 +242,29 @@ export default {
 		},
 		selectedDurationOption() {
 			return this.slotDurationOptions.find(o => o.value === this.slotDuration)
+		},
+		defaultReminderOptions() {
+			const defaultAlarms = getDefaultAlarms().map(seconds => {
+				return {
+					label: moment.duration(Math.abs(seconds) * 1000).locale(this.locale).humanize(),
+					value: seconds.toString(),
+				}
+			})
+
+			return [{
+				label: this.$t('calendar', 'No reminder'),
+				value: 'none',
+			}].concat(defaultAlarms)
+		},
+		selectedDefaultReminderOption() {
+			return this.defaultReminderOptions.find(o => o.value === this.defaultReminder)
+		},
+		hasAppointmentsFeature() {
+			// TODO: Remove me when Calendar doesn't support server < 23
+			return parseInt(OC.config.version.split('.')[0]) >= 23
+		},
+		availabilitySettingsUrl() {
+			return generateUrl('/settings/user/groupware')
 		},
 	},
 	methods: {
@@ -284,7 +346,7 @@ export default {
 		/**
 		 * Updates the setting for slot duration
 		 *
-		 * @param {Object} option The new selected value
+		 * @param {object} option The new selected value
 		 */
 		async changeSlotDuration(option) {
 			if (!option) {
@@ -306,6 +368,30 @@ export default {
 			}
 		},
 		/**
+		 * Updates the setting for the default reminder
+		 *
+		 * @param {object} option The new selected value
+		 */
+		async changeDefaultReminder(option) {
+			if (!option) {
+				return
+			}
+
+			// change to loading status
+			this.savingDefaultReminder = true
+
+			try {
+				await this.$store.dispatch('setDefaultReminder', {
+					defaultReminder: option.value,
+				})
+				this.savingDefaultReminder = false
+			} catch (error) {
+				console.error(error)
+				showError(this.$t('calendar', 'New setting was not saved successfully.'))
+				this.savingDefaultReminder = false
+			}
+		},
+		/**
 		 * Copies the primary CalDAV url to the user's clipboard.
 		 */
 		async copyPrimaryCalDAV() {
@@ -324,7 +410,7 @@ export default {
 		 */
 		async copyAppleCalDAV() {
 			const rootURL = generateRemoteUrl('dav')
-			const url = new URL(client.currentUserPrincipal.principalUrl, rootURL)
+			const url = new URL(getCurrentUserPrincipal().principalUrl, rootURL)
 
 			try {
 				await this.$copyText(url)

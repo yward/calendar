@@ -22,30 +22,26 @@
 
 <template>
 	<div class="datepicker-button-section">
-		<button
-			v-shortkey="previousShortKeyConf"
+		<button v-shortkey="previousShortKeyConf"
 			:aria-label="previousLabel"
 			class="datepicker-button-section__previous button icon icon-leftarrow"
 			:title="previousLabel"
 			type="button"
 			@click="navigateToPreviousTimeRange"
 			@shortkey="navigateToPreviousTimeRange" />
-		<button
-			class="datepicker-button-section__datepicker-label button datepicker-label"
+		<button class="datepicker-button-section__datepicker-label button datepicker-label"
 			@click.stop.prevent="toggleDatepicker"
 			@mousedown.stop.prevent="doNothing"
 			@mouseup.stop.prevent="doNothing">
 			{{ selectedDate | formatDateRage(view, locale) }}
 		</button>
-		<DatePicker
-			ref="datepicker"
+		<DatePicker ref="datepicker"
 			class="datepicker-button-section__datepicker"
 			:date="selectedDate"
 			:is-all-day="true"
 			:open.sync="isDatepickerOpen"
 			@change="navigateToDate" />
-		<button
-			v-shortkey="nextShortKeyConf"
+		<button v-shortkey="nextShortKeyConf"
 			:aria-label="nextLabel"
 			class="datepicker-button-section__next button icon icon-rightarrow"
 			:title="nextLabel"
@@ -73,7 +69,7 @@ export default {
 	filters: {
 		formatDateRage,
 	},
-	data: function() {
+	data() {
 		return {
 			isDatepickerOpen: false,
 		}
@@ -83,7 +79,7 @@ export default {
 			locale: (state) => state.settings.momentLocale,
 		}),
 		selectedDate() {
-			return getDateFromFirstdayParam(this.$route.params.firstDay)
+			return getDateFromFirstdayParam(this.$route.params?.firstDay ?? 'now')
 		},
 		previousShortKeyConf() {
 			return {
@@ -151,6 +147,7 @@ export default {
 				break
 
 			case 'dayGridMonth':
+			case 'listMonth':
 			default: {
 				// modifyDate is just adding one month, so we have to manually
 				// set the date of month to 1. Otherwise if your date is set to

@@ -21,11 +21,8 @@
   -->
 
 <template>
-	<button
-		v-shortkey="['t']"
-		:aria-label="title"
+	<button v-shortkey="['t']"
 		class="button today"
-		:title="title"
 		@shortkey="today"
 		@click="today">
 		{{ $t('calendar', 'Today') }}
@@ -33,15 +30,9 @@
 </template>
 
 <script>
-import moment from '@nextcloud/moment'
 
 export default {
 	name: 'AppNavigationHeaderTodayButton',
-	computed: {
-		title() {
-			return moment().format('ll')
-		},
-	},
 	methods: {
 		today() {
 			const name = this.$route.name

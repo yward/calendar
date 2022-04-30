@@ -3,7 +3,7 @@
  *
  * @author Georg Ehrke <oc.list@georgehrke.com>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license AGPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,30 +29,11 @@ const state = {
 const mutations = {
 
 	/**
-	 * Append multiple contacts to the store
-	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object[]} data.contacts List of contacts to add
-	 */
-	appendContacts(state, { contacts = [] }) {
-		for (const contact of contacts) {
-			if (state.contacts.indexOf(contact) === -1) {
-				state.contacts.push(contact)
-			}
-
-			for (const email of contact.emails) {
-				Vue.set(state.contactByEMail, email, contact)
-			}
-		}
-	},
-
-	/**
 	 * Append a single contact to the store
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object} data.contact The contact to append to the store
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object} data.contact The contact to append to the store
 	 */
 	appendContact(state, { contact }) {
 		if (state.contacts.indexOf(contact) === -1) {
@@ -60,19 +41,24 @@ const mutations = {
 		}
 
 		for (const email of contact.emails) {
-			Vue.set(state.contactByEMail, email, contact)
+			// In the unlikely case that multiple contacts
+			// share the same email address, we will just follow
+			// first come, first served.
+			if (state.contactByEMail[email] === undefined) {
+				Vue.set(state.contactByEMail, email, contact)
+			}
 		}
 	},
 
 	/**
 	 * Removes a single contact from the store
 	 *
-	 * @param {Object} state The store data
-	 * @param {Object} data The destructuring object
-	 * @param {Object} data.contact The contact to remove from the store
+	 * @param {object} state The store data
+	 * @param {object} data The destructuring object
+	 * @param {object} data.contact The contact to remove from the store
 	 */
 	removeContact(state, { contact }) {
-		for (const email of contact.email) {
+		for (const email of contact.emails) {
 			if (state.contactByEMail[email] === contact) {
 				Vue.delete(state.contactByEMail, email)
 			}
